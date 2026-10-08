@@ -504,12 +504,12 @@ const refVals = t => refRows(t).map(r => r[3]);
 
 function renderSummary(G) {
   const m = G.sales.map(s => s.m2), mr = median(refVals(0)), md = median(m);
-  const diff = md != null && mr ? Math.round((md / mr - 1) * 100) : null;
+  const diff = md != null && mr ? Math.round((md / mr - 1) * 1000) / 10 : null;
   const tile = (v, u, l, cls = "") => `<div class="stat ${cls}"><b>${v}${u ? `<small>${u}</small>` : ""}</b><span>${l}</span></div>`;
   document.getElementById("summary").innerHTML =
     tile(md != null ? fmt(md) : "–", "€/m²", "médiane de votre sélection", "lead") +
     tile(mr != null ? fmt(mr) : "–", "€/m²", "médiane Fresnes, appartements") +
-    tile(diff == null ? "–" : (diff > 0 ? "+" : diff < 0 ? "−" : "") + Math.abs(diff), "%", diff == null ? "écart avec Fresnes" : diff === 0 ? "au niveau de Fresnes" : diff > 0 ? "au-dessus de Fresnes" : "sous Fresnes") +
+    tile(diff == null ? "–" : (diff > 0 ? "+" : diff < 0 ? "−" : "") + String(Math.abs(diff).toFixed(1)).replace(".", ","), "%", diff == null ? "écart avec Fresnes" : diff === 0 ? "au niveau de Fresnes" : diff > 0 ? "au-dessus de Fresnes" : "sous Fresnes") +
     tile(G.sales.length, "", `vente${G.sales.length > 1 ? "s" : ""} retenue${G.sales.length > 1 ? "s" : ""}`);
   const n = DATA.sales.filter(s => s.aty && st.sel.has(s.g)).length;
   document.getElementById("atyCount").textContent = n ? `(${n} dans la sélection)` : "";
