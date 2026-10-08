@@ -93,6 +93,8 @@ h2 { font-family: var(--f-display); font-weight: 700; font-size: 19px; margin: 0
 .chip .n { font-family: var(--f-mono); font-size: 11px; opacity: .7; }
 .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--panel); }
 .chip:hover { border-color: var(--accent); }
+#spresets .chip[aria-pressed="true"]::before { content: "✓"; font-weight: 700; margin-right: -2px; }
+#spresets .chip[aria-pressed="true"] { font-weight: 600; color: var(--panel); background: var(--accent); border: 1px solid var(--accent); }
 .chip:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
 .chip.ghost { border-style: dashed; color: var(--ink-2); }
 .chip.ref[aria-pressed="true"] { background: var(--ref); border-color: var(--ref); }
@@ -706,6 +708,7 @@ function update() {
   renderMap(); renderSummary(G); renderStrip(G); renderTable(G); renderBatA(); renderTrend(G); renderFresnes(); renderSales(); save();
   document.getElementById("tabSalesN").textContent = G.sales.length;
   document.querySelectorAll(".refchip").forEach(b => b.setAttribute("aria-pressed", !!refOn[b.dataset.ref]));
+  document.querySelectorAll("#spresets .chip").forEach(b => { const [a, z] = b.dataset.r.split("-").map(Number); b.setAttribute("aria-pressed", a === st.smin && z === st.smax); });
 }
 renderEnergie();
 update();
