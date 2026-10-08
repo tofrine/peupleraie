@@ -18,6 +18,15 @@
 .eprice td.dim { color: var(--ink-3); }
 .eprice small { color: var(--ink-3); font-family: var(--f-mono); font-size: 11px; }
 @media (max-width: 600px) { .erow { grid-template-columns: 1fr 56px; } .erow .elab { grid-column: 1 / -1; } }
+
+/* Réglages repliables sur téléphone */
+#settings > summary { display: none; cursor: pointer; list-style: none; font-size: 15px; padding: 2px 0; }
+#settings > summary::-webkit-details-marker { display: none; }
+#settings > summary { position: relative; padding-right: 28px; }
+#settings > summary::after { content: "▾"; position: absolute; right: 4px; top: 50%; transform: translateY(-50%); color: var(--ink-3); font-size: 18px; }
+#settings:not([open]) > summary::after { content: "▸"; }
+#settings > summary span { display: block; font-size: 13px; color: var(--ink-3); margin-top: 2px; }
+@media (max-width: 880px) { #settings > summary { display: block; } #settings[open] > summary { margin-bottom: 14px; } #map { height: 260px; } }
 </style>
 <style>
 /* Layout : en-tête, plan + réglages, chiffres clés, puis onglets de résultats. Palette : gris-vert de béton, vert peuplier, ocre pour la sélection. */
@@ -192,6 +201,8 @@ footer { font-size: 13px; color: var(--ink-3); display: grid; gap: 4px; max-widt
     </section>
 
     <section class="panel" aria-label="Réglages">
+    <details id="settings" open>
+      <summary><b>Réglages</b> <span id="settingsSum"></span></summary>
       <div class="group">
         <span class="label">Bâtiments</span>
         <div class="bgroups" id="bchips"></div>
@@ -220,6 +231,7 @@ footer { font-size: 13px; color: var(--ink-3); display: grid; gap: 4px; max-widt
         <div class="chips" id="rooms"></div>
       </div>
       <label class="check"><input type="checkbox" id="noAty" checked> Écarter les ventes atypiques <span class="hint" id="atyCount"></span></label>
+        </details>
     </section>
   </div>
 
@@ -417,6 +429,7 @@ function showTab(t) {
   if (!TABS.includes(t)) t = "compare";
   TABS.forEach(k => { document.getElementById("tab-" + k).hidden = k !== t; });
   document.querySelectorAll("#tabs .tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t));
+  document.querySelector(".bench").hidden = document.getElementById("summary").hidden = t === "energie";
   try { sessionStorage.setItem("peupleraie-tab", t); } catch (e) {}
 }
 document.getElementById("tabs").onclick = e => { const b = e.target.closest(".tab"); if (b) showTab(b.dataset.tab); };
@@ -663,7 +676,7 @@ function renderEnergie() {
   document.getElementById("energieBars").innerHTML = rows.join("");
   document.getElementById("energieNote").innerHTML = "Un seul DPE par logement (le plus récent), établis depuis juillet 2021 : cela ne couvre pas tous les logements. "
     + "Calendrier de la loi Climat et résilience : les logements classés G ne peuvent plus être loués depuis 2025, les F à partir de 2028, les E à partir de 2034.";
-  const cols = Object.keys(D.prix), cell = s => !s || !s.n ? "–" : s.med ? `${fmt(s.med)} <small>n=${s.n}</small>` : `<span class="dim">n=${s.n}</span>`;
+  const cols = Object.keys(D.prix).filter(c => c === "TOUS" || Object.values(D.prix[c]).some(s => s.med != null)), cell = s => !s || !s.n ? "–" : s.med ? `${fmt(s.med)} <small>n=${s.n}</small>` : `<span class="dim">n=${s.n}</span>`;
   const ref = D.prix.TOUS["D"] && D.prix.TOUS["D"].med;
   document.getElementById("energiePrix").innerHTML = `<thead><tr><th>Étiquette</th>${cols.map((c, i) => `<th>${name(c)} €/m²</th>${i === 0 ? "<th>Écart à D</th>" : ""}`).join("")}</tr></thead><tbody>` +
     Object.keys(D.prix.TOUS).map(g => { const s = D.prix.TOUS[g], ec = ref && s.med && g !== "D" ? Math.round((s.med / ref - 1) * 100) : null;
@@ -678,7 +691,8 @@ function renderEnergie() {
   document.getElementById("energieEcart").innerHTML = `<thead><tr><th>Étiquette</th><th>écart au prix typique</th><th>ventes</th></tr></thead><tbody>` +
     Object.entries(D.ecart).map(([g, s]) => `<tr><td>${g}</td><td>${s.med != null ? `${pc(s.med)} <small>(${pc(s.q1)} à ${pc(s.q3)})</small>` : "–"}</td><td>${s.n}</td></tr>`).join("") + `</tbody>`;
   const m = D.rapprochement;
-  document.getElementById("energieMatch").innerHTML = `${m.apparie} ventes sur ${m.ventes} ont pu être rapprochées d'un DPE sans ambiguïté (même bâtiment et même entrée, DPE établi dans les deux ans avant la vente, surface proche) ; ${m.ambigu} étaient ambiguës et ${m.aucun} sans DPE correspondant. `
+  document.getElementById("energieMatch").innerHTML = `${m.apparie} ventes sur ${m.ventes} ont pu être rapprochées d'un DPE sans ambiguïté, dont ${m.par_lot} grâce à un numéro de lot commun (le critère le plus sûr). Pour les autres : même bâtiment et même entrée, DPE établi dans les deux ans avant la vente, surface proche. ${m.ambigu} ventes étaient ambiguës et ${m.aucun} sans DPE correspondant. `
+    + (cols.length === 1 ? "Aucun bâtiment n'a assez de ventes par classe pour être détaillé : seul le total du domaine est affiché. " : "")
     + "Un prix plus bas pour une mauvaise étiquette peut aussi venir de l'étage, de l'état du logement ou de l'année de la vente : ces écarts ne sont pas corrigés. Aucun chiffre n'est affiché pour moins de 5 logements ou ventes.";
 }
 
@@ -724,11 +738,23 @@ document.getElementById("csvCopy").onclick = () => {
 function update() {
   renderList();
   const G = groups();
-  renderMap(); renderSummary(G); renderStrip(G); renderTable(G); renderBatA(); renderTrend(G); renderFresnes(); renderSales(); save();
+  renderSettingsSum(); renderMap(); renderSummary(G); renderStrip(G); renderTable(G); renderBatA(); renderTrend(G); renderFresnes(); renderSales(); save();
   document.getElementById("tabSalesN").textContent = G.sales.length;
   document.querySelectorAll(".refchip").forEach(b => b.setAttribute("aria-pressed", !!refOn[b.dataset.ref]));
   document.querySelectorAll("#spresets .chip").forEach(b => { const [a, z] = b.dataset.r.split("-").map(Number); b.setAttribute("aria-pressed", a === st.smin && z === st.smax); });
 }
+// --- réglages : ouverts sur grand écran, repliés sur téléphone, avec un résumé de la sélection
+const mq = matchMedia("(max-width: 880px)"), settings = document.getElementById("settings");
+const fitSettings = () => { settings.open = !mq.matches; };
+fitSettings(); mq.addEventListener("change", fitSettings);
+function renderSettingsSum() {
+  const ys = YEARS.filter(y => st.years.has(y)), n = st.sel.size;
+  const yrs = ys.length === 0 ? "aucune année" : ys.length === YEARS.length ? "toutes les années" : ys.join(", ");
+  const sf = st.smin <= 0 && st.smax >= 200 ? "toutes surfaces" : `${st.smin}–${st.smax} m²`;
+  const pc = st.rooms.size === ROOMS.length ? "tous types" : [...st.rooms].sort().map(r => r === 5 ? "F5 et +" : "F" + r).join(", ");
+  document.getElementById("settingsSum").textContent = `${n} bâtiment${n > 1 ? "s" : ""} · ${yrs} · ${sf} · ${pc}`;
+}
+
 renderEnergie();
 update();
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update);
