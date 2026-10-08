@@ -2,7 +2,20 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<style>/*LEAFLET_CSS*/</style>
+<style>/*LEAFLET_CSS*/
+/* Énergie (DPE) */
+.erow { display: grid; grid-template-columns: 150px 1fr 70px; gap: 10px; align-items: center; margin: 6px 0; font-size: 14px; }
+.erow .elab { color: var(--ink-2); }
+.erow .en { font-family: var(--f-mono); font-size: 12px; color: var(--ink-3); text-align: right; }
+.ebar { display: flex; height: 26px; border-radius: 6px; overflow: hidden; background: var(--grid); }
+.ebar i { display: grid; place-items: center; min-width: 0; font-style: normal; font-family: var(--f-mono); font-size: 12px; color: #1b2421; }
+.ebar i + i { border-left: 2px solid var(--panel); }
+.ekey { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--ink-2); margin: 4px 0 10px; }
+.ekey span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; background: var(--c); }
+.eprice td.dim { color: var(--ink-3); }
+.eprice small { color: var(--ink-3); font-family: var(--f-mono); font-size: 11px; }
+@media (max-width: 600px) { .erow { grid-template-columns: 1fr 56px; } .erow .elab { grid-column: 1 / -1; } }
+</style>
 <style>
 /* Layout : en-tête, plan + réglages, chiffres clés, puis onglets de résultats. Palette : gris-vert de béton, vert peuplier, ocre pour la sélection. */
 :root {
@@ -22,6 +35,7 @@
   --warn-fg: #6b4a0c;
   --seq-1: #cfe3d8; --seq-2: #93c3a9; --seq-3: #569d7b; --seq-4: #2f6b55; --seq-5: #173f31;
   --nodata: #c4c9c0;
+  --eA: #319834; --eB: #33cc31; --eC: #cbfc34; --eD: #fbfe06; --eE: #fbcc05; --eF: #fc9935; --eG: #fc0205;
   --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --f-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
@@ -211,6 +225,7 @@ footer { font-size: 13px; color: var(--ink-3); display: grid; gap: 4px; max-widt
     <button class="tab" role="tab" type="button" data-tab="trend" aria-selected="false">Évolution</button>
     <button class="tab" role="tab" type="button" data-tab="gal" aria-selected="false">Galeries</button>
     <button class="tab" role="tab" type="button" data-tab="fresnes" aria-selected="false">Fresnes</button>
+    <button class="tab" role="tab" type="button" data-tab="energie" aria-selected="false" id="tabEnergie" hidden>Énergie</button>
     <button class="tab" role="tab" type="button" data-tab="sales" aria-selected="false">Ventes<span class="n" id="tabSalesN"></span></button>
   </div>
 
@@ -285,6 +300,20 @@ footer { font-size: 13px; color: var(--ink-3); display: grid; gap: 4px; max-widt
       <div class="chart" id="fresnes"></div>
       <div class="tablewrap"><table id="fresnesTable"></table></div>
       <div class="hint">Prix médian au m² des ventes d'un seul logement à Fresnes, pour les années cochées. Pour les maisons, le prix comprend le terrain mais il est rapporté à la seule surface habitable.</div>
+    </div>
+  </section>
+
+  <section class="tabpanel" id="tab-energie" role="tabpanel" hidden>
+    <div class="block">
+      <div class="panel-head"><h2>Étiquettes énergie (DPE) par bâtiment</h2><span class="hint" id="energieSrc"></span></div>
+      <div class="ekey" id="energieKey"></div>
+      <div id="energieBars"></div>
+      <div class="hint" id="energieNote"></div>
+    </div>
+    <div class="block">
+      <div class="panel-head"><h2>Prix au m² selon l'étiquette</h2><span class="hint">Ventes rapprochées d'un DPE, hors ventes atypiques</span></div>
+      <div class="tablewrap"><table id="energiePrix" class="eprice"></table></div>
+      <div class="hint" id="energieMatch"></div>
     </div>
   </section>
 
@@ -607,6 +636,32 @@ function renderFresnes() {
 }
 document.getElementById("frFilters").onchange = () => renderFresnes();
 
+// --- Énergie (DPE) : effectifs et médianes par groupe, jamais de logement isolé
+const ETIQ = ["A", "B", "C", "D", "E", "F", "G"];
+function renderEnergie() {
+  const D = DATA.dpe; if (!D) return;
+  document.getElementById("tabEnergie").hidden = false; TABS.splice(TABS.indexOf("fresnes") + 1, 0, "energie");
+  const name = c => c === "TOUS" ? "Tout le domaine" : (SHORTN[c] || c);
+  document.getElementById("energieSrc").textContent = `ADEME, mis à jour le ${D.maj} · ${D.n_logements} logements`;
+  document.getElementById("energieKey").innerHTML = ETIQ.map(e => `<span style="--c:var(--e${e})">${e}</span>`).join("");
+  const rows = Object.entries(D.repartition).map(([c, r]) => `<div class="erow"><span class="elab">${name(c)}</span>
+    <div class="ebar" role="img" aria-label="${ETIQ.map(e => `${e} : ${r[e]}`).join(", ")}">${ETIQ.filter(e => r[e]).map(e => `<i style="flex:${r[e]};background:var(--e${e})" title="${e} : ${r[e]}">${r[e] >= 3 ? r[e] : ""}</i>`).join("")}</div>
+    <span class="en">${r.n} DPE</span></div>`);
+  D.trop_peu.forEach(c => rows.push(`<div class="erow"><span class="elab">${name(c)}</span><span class="hint">moins de 5 DPE : non affiché</span><span></span></div>`));
+  document.getElementById("energieBars").innerHTML = rows.join("");
+  document.getElementById("energieNote").innerHTML = "Un seul DPE par logement (le plus récent), établis depuis juillet 2021 : cela ne couvre pas tous les logements. "
+    + "Calendrier de la loi Climat et résilience : les logements classés G ne peuvent plus être loués depuis 2025, les F à partir de 2028, les E à partir de 2034.";
+  const cols = Object.keys(D.prix), cell = s => !s || !s.n ? "–" : s.med ? `${fmt(s.med)} <small>n=${s.n}</small>` : `<span class="dim">n=${s.n}</span>`;
+  const ref = D.prix.TOUS["D"] && D.prix.TOUS["D"].med;
+  document.getElementById("energiePrix").innerHTML = `<thead><tr><th>Étiquette</th>${cols.map((c, i) => `<th>${name(c)} €/m²</th>${i === 0 ? "<th>Écart à D</th>" : ""}`).join("")}</tr></thead><tbody>` +
+    Object.keys(D.prix.TOUS).map(g => { const s = D.prix.TOUS[g], ec = ref && s.med && g !== "D" ? Math.round((s.med / ref - 1) * 100) : null;
+      return `<tr><td>${g}</td>${cols.map((c, i) => `<td>${cell(D.prix[c][g])}</td>${i === 0 ? `<td>${ec == null ? "–" : (ec > 0 ? "+" : "") + ec + " %"}</td>` : ""}`).join("")}</tr>`; }).join("") + `</tbody>`;
+  const m = D.rapprochement;
+  document.getElementById("energieMatch").innerHTML = `${m.apparie} ventes sur ${m.ventes} ont pu être rapprochées d'un DPE sans ambiguïté (même bâtiment et même entrée, DPE établi dans les deux ans avant la vente, surface proche) ; ${m.ambigu} étaient ambiguës et ${m.aucun} sans DPE correspondant. `
+    + "Un prix plus bas pour une mauvaise étiquette peut aussi venir de l'étage, de l'état du logement ou de l'année de la vente : ces écarts ne sont pas corrigés. Aucun chiffre n'est affiché pour moins de 5 logements ou ventes.";
+}
+
+
 // --- ventes une à une
 let showAllSales = false;
 document.getElementById("salesMore").onclick = () => { showAllSales = !showAllSales; renderSales(); };
@@ -652,6 +707,7 @@ function update() {
   document.getElementById("tabSalesN").textContent = G.sales.length;
   document.querySelectorAll(".refchip").forEach(b => b.setAttribute("aria-pressed", !!refOn[b.dataset.ref]));
 }
+renderEnergie();
 update();
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update);
 new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });

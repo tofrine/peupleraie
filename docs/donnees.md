@@ -20,3 +20,13 @@ Un bâtiment correspond à une allée (nom de voie DVF). Sur le boulevard Pasteu
 ## Lots et galeries (`peupleraie/lots.py`)
 
 Les lots du bâtiment A sont relevés sur le règlement de copropriété de 1989 : niveau (rez-de-chaussée, galeries rouge, jaune, bleue, verte), escalier A ou B, duplex montant ou descendant, type F1 à F5. Le bâtiment C a le même plan, avec un décalage de 501 sur les numéros de lots (`MEME_PLAN`). Les autres bâtiments ne sont pas renseignés.
+
+## DPE (`peupleraie/dpe.py`)
+
+Source : ADEME, jeu « DPE logements existants (depuis juillet 2021) », licence ouverte, mis à jour chaque semaine. Les DPE de Fresnes sont téléchargés par l'API (`code_insee_ban_eq=94034`) et rattachés aux bâtiments par le nom de rue (et le numéro, pour le boulevard Pasteur). Si le téléchargement échoue, la page est publiée sans l'onglet « Énergie ».
+
+- **Un logement = un DPE** : le plus récent pour un même bâtiment, entrée, niveau et surface.
+- **Niveau et lots** : le champ « étage » de l'ADEME est inutilisable ; on lit le texte libre du complément d'adresse (« Etage Rouge », « galerie bleue », « N°Lot : 145 / 167 »).
+- **Rapprochement avec une vente** : d'abord par numéro de lot commun avec la vente DVF ; sinon même bâtiment et même entrée, DPE établi de 2 ans avant à 1 mois après la vente, surface à moins de max(3 m², 8 %), même niveau quand il est connu (bât. A et C). Étiquettes divergentes entre candidats : vente « ambiguë », non utilisée.
+- **Publié** : effectifs d'étiquettes par bâtiment et prix au m² par classe (A–C, D, E, F–G), ventes atypiques exclues. Aucun chiffre pour moins de 5 logements ou ventes (`MIN_GROUPE`). Jamais de DPE ni de vente individuels.
+- **Privé** : `uv run peupleraie rapprochement` écrit `prive/rapprochement.csv` (vente par vente, avec le DPE retenu et les candidats). Ce dossier est ignoré par git ; ne pas le publier.

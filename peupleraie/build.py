@@ -73,7 +73,7 @@ def _numero(valeur: object) -> str | None:
     return valeur if isinstance(valeur, str) and not valeur.startswith("900") else None
 
 
-def construire(chemins: Iterable[Path]) -> dict[str, Any]:
+def construire(chemins: Iterable[Path], dpe: Path | None = None) -> dict[str, Any]:
     d = charger(chemins)
     appartements, maisons = ventes_de(d, "Appartement"), ventes_de(d, "Maison")
 
@@ -109,13 +109,23 @@ def construire(chemins: Iterable[Path]) -> dict[str, Any]:
         v["aty"] = int(rapport < ATYPIQUE_BAS or rapport > ATYPIQUE_HAUT)
 
     couverture = d.groupby(d.date_mutation.str[:4]).id_mutation.nunique()
-    return {
+    donnees: dict[str, Any] = {
         "buildings": batiments,
         "sales": ventes,
         "ref": ref,
         "refsales": refsales,
         "coverage": {int(k): int(v) for k, v in couverture.items()},
     }
+    if dpe is not None and dpe.exists():
+        donnees["dpe"] = _energie(p.assign(aty=[v["aty"] for v in ventes]), dpe)
+    return donnees
+
+
+def _energie(p: pd.DataFrame, chemin: Path) -> dict[str, Any]:
+    from . import dpe as m
+
+    parc = m.charger(chemin)
+    return m.agreger(parc, p, m.rapprocher(p, parc))
 
 
 def _fiche(b: Batiment, sub: pd.DataFrame, entrees: list[str]) -> dict[str, Any]:
