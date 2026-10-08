@@ -101,3 +101,9 @@ def test_niveau_different_ecarte_le_candidat(tmp_path):
     dpes = [["6", "Allée de l'Oseraie", "Etage jaune", 60, "E", "2024-03-01"]]
     r = construire([csv(tmp_path, [ligne("m1", "240000", "60", lot="139")])], fichier_dpe(tmp_path, dpes))["dpe"]
     assert r["rapprochement"]["aucun"] == 1
+
+
+def test_colonnes_utiles_sont_demandees_a_l_api():
+    from peupleraie.config import DPE_CHAMPS
+
+    assert set(dpe.COLONNES_UTILES) <= set(DPE_CHAMPS)

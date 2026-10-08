@@ -54,7 +54,7 @@ DPE_CHAMPS = (
     "numero_voie_ban",
     "nom_rue_ban",
     "code_insee_ban",
-    "numero_etage_appartement",
+    "complement_adresse_logement",
     "surface_habitable_logement",
     "etiquette_dpe",
     "etiquette_ges",
