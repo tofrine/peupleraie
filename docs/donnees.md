@@ -17,6 +17,8 @@ Demandes de valeurs foncières géolocalisées (DGFiP, Etalab), un fichier par a
 
 Un bâtiment correspond à une allée (nom de voie DVF). Sur le boulevard Pasteur, la parcelle les distingue : bâtiment H (Allée de la Convention) = parcelle V 90, n° 30–32 ; bâtiment F (Allée Louis Pasteur) = parcelle V 80, n° 58–60. La liste est dans `peupleraie/config.py`.
 
+Parcelles et registre des copropriétés : pour H, les ventes DVF sont toutes sur la parcelle V 90 (30 et 32), alors que le registre national des copropriétés cite V 91, 92 et 93. Sur le plan cadastral, ce sont de petites parcelles voisines de dépendances (garages, parkings) rattachées à la copropriété ; l'immeuble est sur V 90. De même pour F : V 80 porte l'immeuble (58 et 60), les parcelles voisines sont des dépendances.
+
 ## Lots et galeries (`peupleraie/lots.py`)
 
 Les lots du bâtiment A sont relevés sur le règlement de copropriété de 1989 : niveau (rez-de-chaussée, galeries rouge, jaune, bleue, verte), escalier A ou B, duplex montant ou descendant, type F1 à F5. Le bâtiment C a le même plan, avec un décalage de 501 sur les numéros de lots (`MEME_PLAN`). Les autres bâtiments ne sont pas renseignés.
