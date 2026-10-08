@@ -100,6 +100,7 @@ h2 { font-family: var(--f-display); font-weight: 700; font-size: 19px; margin: 0
 
 .group { display: grid; gap: 7px; }
 .label { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+select.pick { font: inherit; padding: 8px 10px; border: 1px solid var(--line, #ccc); border-radius: 8px; background: var(--panel); color: var(--ink); max-width: 100%; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 4px 12px; cursor: pointer; display: inline-flex; gap: 7px; align-items: baseline; }
 .chip .n { font-family: var(--f-mono); font-size: 11px; opacity: .7; }
@@ -286,16 +287,20 @@ footer { font-size: 13px; color: var(--ink-3); display: grid; gap: 4px; max-widt
         </div>
       </div>
       <div class="group">
-        <span class="label">Courbes</span>
-        <div class="chips" id="trendMode">
-          <button class="chip" type="button" data-v="split" aria-pressed="true">Une par bâtiment</button>
-          <button class="chip" type="button" data-v="pool" aria-pressed="false">Toute la sélection</button>
-        </div>
+        <label class="label" for="trendMode">Une courbe par</label>
+        <select id="trendMode" class="pick">
+          <option value="g">Bâtiment</option>
+          <option value="p">Nombre de pièces</option>
+          <option value="niv">Galerie (A et C seulement)</option>
+          <option value="md">Montant / descendant (A et C seulement)</option>
+          <option value="pool">Aucune : toute la sélection</option>
+        </select>
       </div>
       <div class="legend" id="trendLegend"></div>
+      <p class="hint" id="trendNote"></p>
       <div class="chart" id="trend"></div>
       <div class="tablewrap"><table id="trendTable"></table></div>
-      <div class="hint">Les filtres du haut (pièces, surface, années, ventes atypiques) s'appliquent à toutes les courbes. « Une par bâtiment » suit le regroupement choisi dans les réglages (bâtiment, galerie, montant/descendant…).</div>
+      <div class="hint">Les filtres du haut (bâtiments, pièces, surface, années, ventes atypiques) s'appliquent à toutes les courbes. Ce choix est indépendant du regroupement des réglages.</div>
     </div>
   </section>
 
@@ -630,17 +635,24 @@ function lineChart(el, legendEl, ys, series, labelAll, noLabels) {
 const pointsBy = (rows, ys) => ys.map(y => { const v = rows.filter(r => r[0] === y).map(r => r[3]); return { y, med: median(v), n: v.length }; });
 
 const TREND_COL = ["#2a6fdb", "#d9822b", "#2f9e6b", "#c0457b", "#7a5bd1", "#b59a1c", "#2aa3b8", "#8a8f98"];
-let trendMode = "split";
-document.getElementById("trendMode").onclick = e => { const b = e.target.closest(".chip"); if (!b) return; trendMode = b.dataset.v;
-  document.querySelectorAll("#trendMode .chip").forEach(c => c.setAttribute("aria-pressed", c.dataset.v === trendMode)); update(); };
+let trendMode = "g";
+const trendSel = document.getElementById("trendMode");
+trendSel.onchange = () => { trendMode = trendSel.value; update(); };
 function renderTrend(G) {
   const ys = YEARS.filter(y => st.years.has(y)), by = rows => ys.map(y => { const v = rows.filter(s => s.y === y).map(s => s.m2); return { y, med: median(v), n: v.length }; });
-  const split = trendMode === "split" && G.list.length > 1;
-  const series = split
-    ? [...G.list].sort((a, b) => String(a.label).localeCompare(String(b.label), "fr")).map((r, i) => ({ name: st.groupBy === "g" && SHORTN[r.k] ? SHORTN[r.k] : r.label, color: TREND_COL[i % TREND_COL.length], dash: false, pts: by(r.ss) }))
-    : [{ name: "Sélection", color: "var(--accent)", dash: false, pts: by(G.sales) }];
+  let series = [];
+  if (trendMode !== "pool") {
+    const m = new Map();
+    G.sales.forEach(s => { const k = KEY[trendMode](s); if (k == null) return; if (!m.has(k)) m.set(k, []); m.get(k).push(s); });
+    const nom = k => trendMode === "g" ? SHORTN[k] || LABEL.g(k) : LABEL[trendMode](k);
+    series = [...m].sort((x, y) => String(x[0]).localeCompare(String(y[0]), "fr", { numeric: true }))
+      .map(([k, ss], i) => ({ name: nom(k), color: TREND_COL[i % TREND_COL.length], dash: false, pts: by(ss) }));
+  }
+  const split = series.length > 1;
+  if (!split) series = [{ name: "Sélection", color: "var(--accent)", dash: false, pts: by(G.sales) }];
   activeRefs().forEach(rf => series.push({ name: `${rf.name} (mêmes filtres)`, color: rf.color, dash: true, pts: pointsBy(refRows(rf.t), ys) }));
   lineChart(document.getElementById("trend"), document.getElementById("trendLegend"), ys, series, false, split);
+  document.getElementById("trendNote").textContent = trendMode === "niv" || trendMode === "md" ? (G.sales.some(s => KEY[trendMode](s)) ? "" : "Cochez le bâtiment A ou C : la galerie n'est connue que pour eux.") : "";
   document.getElementById("trendTable").innerHTML = !series.some(s => s.pts.some(p => p.med != null)) ? "" :
     `<thead><tr><th>Année</th>${series.map(s => `<th>${s.name} €/m²</th><th>ventes</th>`).join("")}</tr></thead><tbody>` +
     ys.map((y, k) => `<tr><td>${y}</td>${series.map(s => `<td>${s.pts[k].med != null ? fmt(s.pts[k].med) : "–"}</td><td>${s.pts[k].n}</td>`).join("")}</tr>`).join("") + `</tbody>`;
