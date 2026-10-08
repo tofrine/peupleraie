@@ -19,6 +19,8 @@ Un bâtiment correspond à une allée (nom de voie DVF). Sur le boulevard Pasteu
 
 Parcelles et registre des copropriétés : pour H, les ventes DVF sont toutes sur la parcelle V 90 (30 et 32), alors que le registre national des copropriétés cite V 91, 92 et 93. Sur le plan cadastral, ce sont de petites parcelles voisines de dépendances (garages, parkings) rattachées à la copropriété ; l'immeuble est sur V 90. De même pour F : V 80 porte l'immeuble (58 et 60), les parcelles voisines sont des dépendances.
 
+Pour E (allée de la Résidence), c'est l'inverse : les ventes DVF sont rattachées à V 109, une parcelle de garages, alors que le registre cite V 110 à 112. DVF rattache donc un lot à une parcelle de la copropriété, pas forcément à celle qui porte l'immeuble. C'est pourquoi E est repéré par le nom de la voie et non par la parcelle, et pourquoi un rapprochement DVF et registre par parcelle ne serait pas fiable.
+
 ## Lots et galeries (`peupleraie/lots.py`)
 
 Les lots du bâtiment A sont relevés sur le règlement de copropriété de 1989 : niveau (rez-de-chaussée, galeries rouge, jaune, bleue, verte), escalier A ou B, duplex montant ou descendant, type F1 à F5. Le bâtiment C a le même plan, avec un décalage de 501 sur les numéros de lots (`MEME_PLAN`). Les autres bâtiments ne sont pas renseignés.
