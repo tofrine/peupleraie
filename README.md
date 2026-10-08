@@ -17,7 +17,6 @@ Prérequis : Python 3.12+ et [uv](https://docs.astral.sh/uv/).
 ```
 > uv run peupleraie all        # télécharge, nettoie, assemble
 > uv run peupleraie fetch      # une seule étape : fetch | build | site
-> uv run peupleraie rapprochement  # privé : ventes et DPE, vente par vente, dans prive/
 ```
 
 La page est écrite dans `site/index.html` : un seul fichier, à ouvrir dans un navigateur.
