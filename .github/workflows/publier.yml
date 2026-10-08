@@ -19,12 +19,29 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ARCHIVES_TOKEN: ${{ secrets.ARCHIVES_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+      - name: Coffre des archives DVF (dépôt privé)
+        if: env.ARCHIVES_TOKEN != ''
+        uses: actions/checkout@v4
+        with:
+          repository: tofrine/peupleraie-archives
+          token: ${{ secrets.ARCHIVES_TOKEN }}
+          path: archive
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --locked
       - run: uv run pytest -q
       - run: uv run peupleraie all
+      - name: Mettre à jour le coffre
+        if: env.ARCHIVES_TOKEN != ''
+        working-directory: archive
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || { git commit -m "Archives DVF $(date +%F)"; git push; }
       - name: Nom de domaine
         run: if [ -f CNAME ]; then cp CNAME site/CNAME; fi
       - uses: actions/upload-pages-artifact@v3

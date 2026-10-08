@@ -38,6 +38,7 @@ Mise en place, une seule fois : *Settings → Pages → Source : GitHub Actions*
 ## Documentation
 
 - [docs/donnees.md](docs/donnees.md) : source, règles de nettoyage, bâtiments et lots
+- [docs/archives.md](docs/archives.md) : conserver les années DVF qui disparaissent de la source (dépôt privé)
 - [docs/domaine.md](docs/domaine.md) : domaine OVH et HTTPS
 
 La page n'est pas indexée par les moteurs de recherche (`robots.txt` et balise `noindex`), comme le demandent les conditions de réutilisation de DVF.
