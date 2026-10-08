@@ -107,10 +107,20 @@ def batiment_de(nom_rue: object, entree: str | None) -> str | None:
     return None
 
 
+COLONNES_UTILES = (
+    "numero_voie_ban",
+    "nom_rue_ban",
+    "complement_adresse_logement",
+    "surface_habitable_logement",
+    "etiquette_dpe",
+    "date_etablissement_dpe",
+)
+
+
 def charger(chemin: Path) -> pd.DataFrame:
     """DPE du domaine : une ligne par DPE, avec bâtiment, entrée, étage, surface, étiquette et date."""
     d = pd.read_csv(chemin, dtype=str)
-    manquantes = [c for c in DPE_CHAMPS if c not in d.columns]
+    manquantes = [c for c in COLONNES_UTILES if c not in d.columns]
     if manquantes:
         raise ValueError(f"colonnes DPE absentes {manquantes} ; reçues {list(d.columns)[:8]} ({len(d)} lignes)")
     out = pd.DataFrame(
