@@ -253,8 +253,17 @@ footer { font-size: 13px; color: var(--ink-3); display: grid; gap: 4px; max-widt
           <button class="chip ref2 refchip" type="button" data-ref="refM" aria-pressed="false">Maisons</button>
         </div>
       </div>
+      <div class="group">
+        <span class="label">Courbes</span>
+        <div class="chips" id="trendMode">
+          <button class="chip" type="button" data-v="split" aria-pressed="true">Une par bâtiment</button>
+          <button class="chip" type="button" data-v="pool" aria-pressed="false">Toute la sélection</button>
+        </div>
+      </div>
       <div class="legend" id="trendLegend"></div>
       <div class="chart" id="trend"></div>
+      <div class="tablewrap"><table id="trendTable"></table></div>
+      <div class="hint">Les filtres du haut (pièces, surface, années, ventes atypiques) s'appliquent à toutes les courbes. « Une par bâtiment » suit le regroupement choisi dans les réglages (bâtiment, galerie, montant/descendant…).</div>
     </div>
   </section>
 
@@ -543,7 +552,7 @@ const markPlan = () => planEl.querySelectorAll(".chip").forEach(c => c.setAttrib
 planEl.onclick = e => { const b = e.target.closest(".chip"); if (!b) return; st.plan = b.dataset.v; markPlan(); renderBatA(); }; markPlan();
 
 // --- évolution
-function lineChart(el, legendEl, ys, series, labelAll) {
+function lineChart(el, legendEl, ys, series, labelAll, noLabels) {
   legendEl.innerHTML = series.map(s => `<span><i class="${s.dash ? "dash" : ""}" style="background:${s.color}"></i>${s.name}</span>`).join("");
   const vals = series.flatMap(s => s.pts.filter(p => p.med != null).map(p => p.med));
   if (!ys.length || !vals.length) { el.innerHTML = `<p class="empty">Pas assez de ventes pour tracer une évolution.</p>`; return; }
@@ -558,7 +567,7 @@ function lineChart(el, legendEl, ys, series, labelAll) {
     const pts = se.pts.filter(p => p.med != null);
     if (pts.length > 1) s += `<polyline fill="none" stroke="${se.color}" stroke-width="2" stroke-linejoin="round" ${se.dash ? 'stroke-dasharray="6 4"' : ""} points="${pts.map(p => `${x(p.y)},${yy(p.med)}`).join(" ")}"/>`;
     pts.forEach(p => { s += `<circle cx="${x(p.y)}" cy="${yy(p.med)}" r="5" fill="${p.n < 3 ? "var(--panel)" : se.color}" stroke="${se.color}" stroke-width="2"/><circle class="hit" data-s="${si}" data-y="${p.y}" cx="${x(p.y)}" cy="${yy(p.med)}" r="14" fill="transparent"/>`; });
-    if (si === 0 || labelAll) pts.forEach(p => { s += `<text x="${x(p.y)}" y="${yy(p.med) + (labelAll && si === 1 ? 21 : -12)}" text-anchor="middle" style="font-family:var(--f-mono);font-size:11px;fill:var(--ink)">${fmt(p.med)}</text>`; });
+    if ((si === 0 && !noLabels) || labelAll) pts.forEach(p => { s += `<text x="${x(p.y)}" y="${yy(p.med) + (labelAll && si === 1 ? 21 : -12)}" text-anchor="middle" style="font-family:var(--f-mono);font-size:11px;fill:var(--ink)">${fmt(p.med)}</text>`; });
   });
   el.innerHTML = s + `</svg>`;
   el.querySelectorAll(".hit").forEach(c => { c.onmousemove = e => { const se = series[+c.dataset.s], p = se.pts.find(q => q.y === +c.dataset.y);
@@ -566,11 +575,21 @@ function lineChart(el, legendEl, ys, series, labelAll) {
 }
 const pointsBy = (rows, ys) => ys.map(y => { const v = rows.filter(r => r[0] === y).map(r => r[3]); return { y, med: median(v), n: v.length }; });
 
+const TREND_COL = ["#2a6fdb", "#d9822b", "#2f9e6b", "#c0457b", "#7a5bd1", "#b59a1c", "#2aa3b8", "#8a8f98"];
+let trendMode = "split";
+document.getElementById("trendMode").onclick = e => { const b = e.target.closest(".chip"); if (!b) return; trendMode = b.dataset.v;
+  document.querySelectorAll("#trendMode .chip").forEach(c => c.setAttribute("aria-pressed", c.dataset.v === trendMode)); update(); };
 function renderTrend(G) {
-  const ys = YEARS.filter(y => st.years.has(y));
-  const series = [{ name: "Sélection", color: "var(--accent)", dash: false, pts: ys.map(y => { const v = G.sales.filter(s => s.y === y).map(s => s.m2); return { y, med: median(v), n: v.length }; }) }];
+  const ys = YEARS.filter(y => st.years.has(y)), by = rows => ys.map(y => { const v = rows.filter(s => s.y === y).map(s => s.m2); return { y, med: median(v), n: v.length }; });
+  const split = trendMode === "split" && G.list.length > 1;
+  const series = split
+    ? [...G.list].sort((a, b) => String(a.label).localeCompare(String(b.label), "fr")).map((r, i) => ({ name: st.groupBy === "g" && SHORTN[r.k] ? SHORTN[r.k] : r.label, color: TREND_COL[i % TREND_COL.length], dash: false, pts: by(r.ss) }))
+    : [{ name: "Sélection", color: "var(--accent)", dash: false, pts: by(G.sales) }];
   activeRefs().forEach(rf => series.push({ name: `${rf.name} (mêmes filtres)`, color: rf.color, dash: true, pts: pointsBy(refRows(rf.t), ys) }));
-  lineChart(document.getElementById("trend"), document.getElementById("trendLegend"), ys, series);
+  lineChart(document.getElementById("trend"), document.getElementById("trendLegend"), ys, series, false, split);
+  document.getElementById("trendTable").innerHTML = !series.some(s => s.pts.some(p => p.med != null)) ? "" :
+    `<thead><tr><th>Année</th>${series.map(s => `<th>${s.name} €/m²</th><th>ventes</th>`).join("")}</tr></thead><tbody>` +
+    ys.map((y, k) => `<tr><td>${y}</td>${series.map(s => `<td>${s.pts[k].med != null ? fmt(s.pts[k].med) : "–"}</td><td>${s.pts[k].n}</td>`).join("")}</tr>`).join("") + `</tbody>`;
 }
 
 // --- Fresnes : ensemble, appartements, maisons
