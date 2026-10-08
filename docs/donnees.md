@@ -28,7 +28,7 @@ Source : ADEME, jeu « DPE logements existants (depuis juillet 2021) », licence
 - **Un logement = un DPE** : le plus récent pour un même bâtiment, entrée, niveau et surface.
 - **Niveau et lots** : le champ « étage » de l'ADEME est inutilisable ; on lit le texte libre du complément d'adresse (« Etage Rouge », « galerie bleue », « N°Lot : 145 / 167 »).
 - **Rapprochement avec une vente** : d'abord par numéro de lot commun avec la vente DVF ; sinon même bâtiment et même entrée, DPE établi de 2 ans avant à 1 mois après la vente, surface à moins de max(3 m², 8 %), même niveau quand il est connu (bât. A et C). Étiquettes divergentes entre candidats : vente « ambiguë », non utilisée.
-- **Publié** : effectifs d'étiquettes par bâtiment et prix au m² par classe (A–C, D, E, F–G), ventes atypiques exclues. Aucun chiffre pour moins de 5 logements ou ventes (`MIN_GROUPE`). Jamais de DPE ni de vente individuels.
+- **Publié** : effectifs d'étiquettes par bâtiment et prix au m² par classe (A–C, D, E, F–G), ventes atypiques exclues. Aucun chiffre pour moins de 5 logements ou ventes (`MIN_GROUPE`). Jamais de DPE individuel : seul l'onglet « Ventes » (données DVF ouvertes) détaille les ventes.
 
 ### Le prix dépend-il de l'étiquette ?
 
