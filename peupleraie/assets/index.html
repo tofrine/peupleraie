@@ -1,0 +1,639 @@
+<title>Prix à la Peupleraie</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>/*LEAFLET_CSS*/</style>
+<style>
+/* Layout : en-tête, plan + réglages, chiffres clés, puis onglets de résultats. Palette : gris-vert de béton, vert peuplier, ocre pour la sélection. */
+:root {
+  --bg: #f2f3ee;
+  --panel: #ffffff;
+  --ink: #1b2421;
+  --ink-2: #46544e;
+  --ink-3: #75817b;
+  --line: #d8dcd2;
+  --grid: #e7eae2;
+  --accent: #2c6a53;
+  --accent-soft: #e3eee8;
+  --sel: #c07a14;
+  --ref: #6a6f9a;
+  --ref2: #9a6440;
+  --warn-bg: #fbf1dc;
+  --warn-fg: #6b4a0c;
+  --seq-1: #cfe3d8; --seq-2: #93c3a9; --seq-3: #569d7b; --seq-4: #2f6b55; --seq-5: #173f31;
+  --nodata: #c4c9c0;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #131816; --panel: #1b2220; --ink: #e8ede9; --ink-2: #b0bab4; --ink-3: #85918b;
+  --line: #2f3833; --grid: #262e2a; --accent: #6fbf98; --accent-soft: #223a2f; --sel: #e8ab50; --ref: #a3a8d8; --ref2: #d9a47c;
+  --warn-bg: #33290f; --warn-fg: #f0d79b;
+  --seq-1: #2a4a3c; --seq-2: #3b7058; --seq-3: #5a9c7c; --seq-4: #89c7a6; --seq-5: #c4ebd5; --nodata: #4a524d;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #131816; --panel: #1b2220; --ink: #e8ede9; --ink-2: #b0bab4; --ink-3: #85918b;
+  --line: #2f3833; --grid: #262e2a; --accent: #6fbf98; --accent-soft: #223a2f; --sel: #e8ab50; --ref: #a3a8d8; --ref2: #d9a47c;
+  --warn-bg: #33290f; --warn-fg: #f0d79b;
+  --seq-1: #2a4a3c; --seq-2: #3b7058; --seq-3: #5a9c7c; --seq-4: #89c7a6; --seq-5: #c4ebd5; --nodata: #4a524d;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 56px; display: grid; gap: 22px; }
+button { font-family: inherit; }
+header { display: grid; gap: 8px; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(30px, 5vw, 46px); line-height: 1.04; margin: 0; letter-spacing: -.015em; text-wrap: balance; }
+h2 { font-family: var(--f-display); font-weight: 700; font-size: 19px; margin: 0; }
+.lede { color: var(--ink-2); max-width: 66ch; margin: 0; font-size: 17px; }
+.note { font-size: 14px; color: var(--ink-3); max-width: 90ch; }
+.note b { color: var(--warn-fg); background: var(--warn-bg); padding: 1px 7px; border-radius: 4px; font-weight: 600; }
+
+.bench { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 880px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 8px 16px; flex-wrap: wrap; }
+.hint { font-size: 13px; color: var(--ink-3); }
+#map { height: 400px; border-radius: 8px; background: var(--grid); z-index: 0; }
+@media (max-width: 880px) { #map { height: 340px; } }
+.leaflet-container { font-family: var(--f-body); background: var(--grid); }
+.leaflet-tooltip { font-family: var(--f-body); font-size: 13px; background: var(--panel); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.leaflet-tooltip-top:before { border-top-color: var(--line); }
+.leaflet-control-attribution { font-size: 10px; }
+.maplabel { font: 700 12px var(--f-display); color: var(--ink); background: var(--panel); border: 1px solid var(--line); padding: 0 5px; border-radius: 4px; white-space: nowrap; position: relative; left: 14px; top: -9px; }
+.key { font-size: 13px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.key b { font-family: var(--f-display); color: var(--ink); }
+.map-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 13px; color: var(--ink-2); }
+.ramp { display: inline-flex; gap: 2px; vertical-align: middle; }
+.ramp i { width: 22px; height: 10px; border-radius: 2px; display: inline-block; }
+.dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; vertical-align: middle; }
+.tilenote { font-size: 12px; color: var(--ink-3); }
+
+.group { display: grid; gap: 7px; }
+.label { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 4px 12px; cursor: pointer; display: inline-flex; gap: 7px; align-items: baseline; }
+.chip .n { font-family: var(--f-mono); font-size: 11px; opacity: .7; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+.chip:hover { border-color: var(--accent); }
+.chip:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
+.chip.ghost { border-style: dashed; color: var(--ink-2); }
+.chip.ref[aria-pressed="true"] { background: var(--ref); border-color: var(--ref); }
+.chip.ref2[aria-pressed="true"] { background: var(--ref2); border-color: var(--ref2); }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+input[type="number"] { font: inherit; width: 76px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); font-variant-numeric: tabular-nums; }
+.check { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; cursor: pointer; }
+.bgroups { display: grid; gap: 10px; }
+.bgroups .sublabel { font-size: 13px; color: var(--ink-3); margin-bottom: 5px; }
+.chip.alt { border-style: dashed; }
+.chip.alt[aria-pressed="true"] { background: var(--ink-2); border-color: var(--ink-2); }
+.linkbtn { font: inherit; font-size: 13px; background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; }
+.sub { font-size: 13px; color: var(--ink-3); margin-top: 2px; }
+
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 2px; }
+.stat b { font-family: var(--f-display); font-weight: 800; font-size: clamp(26px, 3.4vw, 34px); line-height: 1.05; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.stat b small { font-size: 14px; font-weight: 600; color: var(--ink-3); margin-left: 3px; }
+.stat span { font-size: 13px; color: var(--ink-3); }
+.stat.lead { background: var(--accent-soft); border-color: transparent; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { font: 600 15px var(--f-body); background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 14px 9px; color: var(--ink-2); cursor: pointer; white-space: nowrap; margin-bottom: -1px; }
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tab .n { font-family: var(--f-mono); font-size: 11px; font-weight: 400; color: var(--ink-3); margin-left: 6px; }
+.tabpanel { display: grid; gap: 18px; min-width: 0; }
+.block { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
+
+.chart { width: 100%; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 620px; height: auto; }
+.chart text { fill: var(--ink-2); font-family: var(--f-body); font-size: 12px; }
+.chart .axis text { fill: var(--ink-3); font-family: var(--f-mono); font-size: 11px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.legend i.dash { -webkit-mask: repeating-linear-gradient(90deg, #000 0 4px, transparent 4px 7px); mask: repeating-linear-gradient(90deg, #000 0 4px, transparent 4px 7px); }
+
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; white-space: normal; min-width: 170px; }
+th { font-family: var(--f-mono); font-weight: 500; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); cursor: pointer; user-select: none; }
+th[aria-sort="ascending"]::after { content: " ↑"; } th[aria-sort="descending"]::after { content: " ↓"; }
+#sales th { cursor: default; }
+tr.total td { font-weight: 700; border-top: 1px solid var(--line); background: var(--accent-soft); }
+tr.ref td { color: var(--ink-2); font-style: italic; }
+.few { color: var(--ink-3); }
+tr.aty td { color: var(--ink-3); text-decoration: line-through; text-decoration-color: var(--line); }
+.tag { font-size: 11px; font-family: var(--f-mono); padding: 1px 6px; border-radius: 4px; background: var(--accent-soft); color: var(--ink-2); }
+.empty { color: var(--ink-3); font-size: 14px; padding: 8px 0; }
+
+.bata { display: grid; grid-template-columns: 120px repeat(2, minmax(0, 1fr)); gap: 6px; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .bata { grid-template-columns: 70px repeat(2, minmax(0, 1fr)); } .bata .lv { font-size: 12px; } }
+.bata .h { font-family: var(--f-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); padding: 2px 4px; }
+.bata .lv { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); }
+.bata .lv i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: none; }
+.bata button.cell { font: inherit; text-align: left; border: 1px solid transparent; border-radius: 8px; padding: 8px 12px; cursor: pointer; display: grid; gap: 0; min-height: 58px; color: var(--ink); }
+.bata button.cell b { font-family: var(--f-display); font-size: 17px; }
+.bata button.cell span { font-size: 12px; color: var(--ink-2); }
+.bata button.cell.lt b, .bata button.cell.lt span { color: #ffffff; }
+.bata button.cell.dk b { color: #10201a; }
+.bata button.cell.dk span { color: #2b3a33; }
+.bata button.cell[aria-pressed="false"] { opacity: .35; }
+
+#tip { position: fixed; pointer-events: none; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.14); z-index: 1000; max-width: 260px; }
+footer { font-size: 13px; color: var(--ink-3); display: grid; gap: 4px; max-width: 90ch; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Fresnes · Domaine de la Peupleraie · ventes d'appartements</div>
+    <h1>Prix de vente à la Peupleraie</h1>
+    <p class="lede">Choisissez les bâtiments sur le plan, réglez la période et la taille des logements : les prix au m² se comparent juste en dessous.</p>
+    <div class="note" id="coverage"></div>
+  </header>
+
+  <div class="bench">
+    <section class="panel" aria-label="Plan">
+      <div class="panel-head"><h2>Plan</h2><span class="hint">Cliquez un bâtiment pour l'ajouter ou le retirer</span></div>
+      <div id="map"></div>
+      <div class="key" id="mapkey"></div>
+      <div class="map-legend">
+        <span>Prix médian au m²</span>
+        <span class="ramp" id="ramp"></span>
+        <span id="rampLabels" class="hint"></span>
+        <span><span class="dot" style="background:var(--nodata)"></span> pas de vente</span>
+      </div>
+      <div class="tilenote" id="tilenote">Grosseur du point : nombre de ventes. Position : centre de la parcelle cadastrale.</div>
+    </section>
+
+    <section class="panel" aria-label="Réglages">
+      <div class="group">
+        <span class="label">Bâtiments</span>
+        <div class="bgroups" id="bchips"></div>
+        <div><button class="linkbtn" id="selNone" type="button">Tout décocher</button></div>
+      </div>
+      <div class="group">
+        <span class="label">Années</span>
+        <div class="chips" id="years"></div>
+      </div>
+      <div class="group">
+        <span class="label">Surface</span>
+        <div class="chips" id="spresets">
+          <button class="chip ghost" type="button" data-r="0-200">Toutes</button>
+          <button class="chip ghost" type="button" data-r="0-49">moins de 50 m²</button>
+          <button class="chip ghost" type="button" data-r="50-64">50–64</button>
+          <button class="chip ghost" type="button" data-r="65-79">65–79</button>
+          <button class="chip ghost" type="button" data-r="80-200">80 et +</button>
+        </div>
+        <div class="row">
+          <label class="check">de <input type="number" id="smin" min="0" max="300" step="1" value="0"> m²</label>
+          <label class="check">à <input type="number" id="smax" min="0" max="300" step="1" value="200"> m²</label>
+        </div>
+      </div>
+      <div class="group">
+        <span class="label">Pièces principales</span>
+        <div class="chips" id="rooms"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="noAty" checked> Écarter les ventes atypiques <span class="hint" id="atyCount"></span></label>
+    </section>
+  </div>
+
+  <section class="kpis" id="summary" aria-label="Chiffres clés"></section>
+
+  <div class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" type="button" data-tab="compare" aria-selected="true">Comparer</button>
+    <button class="tab" role="tab" type="button" data-tab="trend" aria-selected="false">Évolution</button>
+    <button class="tab" role="tab" type="button" data-tab="gal" aria-selected="false">Galeries</button>
+    <button class="tab" role="tab" type="button" data-tab="fresnes" aria-selected="false">Fresnes</button>
+    <button class="tab" role="tab" type="button" data-tab="sales" aria-selected="false">Ventes<span class="n" id="tabSalesN"></span></button>
+  </div>
+
+  <section class="tabpanel" id="tab-compare" role="tabpanel">
+    <div class="block">
+      <div class="panel-head"><h2>Prix au m², vente par vente</h2></div>
+      <div class="group">
+        <span class="label">Regrouper par</span>
+        <div class="chips" id="groupBy">
+          <button class="chip" type="button" data-v="g">Bâtiment</button>
+          <button class="chip" type="button" data-v="e">Entrée</button>
+          <button class="chip" type="button" data-v="p">Pièces</button>
+          <button class="chip" type="button" data-v="niv">Galerie (A et C)</button>
+          <button class="chip" type="button" data-v="md">Montant / descendant (A et C)</button>
+        </div>
+      </div>
+      <div class="group">
+        <span class="label">Repères Fresnes</span>
+        <div class="chips">
+          <button class="chip ref refchip" type="button" data-ref="refA" aria-pressed="true">Appartements</button>
+          <button class="chip ref2 refchip" type="button" data-ref="refM" aria-pressed="false">Maisons</button>
+        </div>
+      </div>
+      <div class="hint">Un point = une vente. Trait vertical : médiane. Ligne grise : du minimum au maximum.</div>
+      <div class="chart" id="strip"></div>
+    </div>
+    <div class="block">
+      <div class="panel-head"><h2>Minimum, médiane, maximum</h2><span class="hint">Grisé : moins de 3 ventes, à lire avec prudence. Cliquez un titre pour trier.</span></div>
+      <div class="tablewrap"><table id="table"></table></div>
+    </div>
+  </section>
+
+  <section class="tabpanel" id="tab-trend" role="tabpanel" hidden>
+    <div class="block">
+      <div class="panel-head"><h2>Évolution du prix médian au m²</h2><span class="hint">Point creux : moins de 3 ventes cette année-là</span></div>
+      <div class="group">
+        <span class="label">Repères Fresnes</span>
+        <div class="chips">
+          <button class="chip ref refchip" type="button" data-ref="refA" aria-pressed="true">Appartements</button>
+          <button class="chip ref2 refchip" type="button" data-ref="refM" aria-pressed="false">Maisons</button>
+        </div>
+      </div>
+      <div class="legend" id="trendLegend"></div>
+      <div class="chart" id="trend"></div>
+    </div>
+  </section>
+
+  <section class="tabpanel" id="tab-gal" role="tabpanel" hidden>
+    <div class="block">
+      <div class="panel-head"><h2>Galerie par galerie</h2>
+        <div class="chips" id="plan"><button class="chip" type="button" data-v="A">A · Oseraie</button><button class="chip" type="button" data-v="C">C · Braque</button><button class="chip" type="button" data-v="AC">Les deux</button></div>
+      </div>
+      <div class="hint">Cliquez une case pour inclure ou exclure cette galerie dans toute la page.</div>
+      <div id="bata"></div>
+      <div class="hint">Les bâtiments A et C ont le même plan : des duplex « montants » (on monte depuis la galerie) et « descendants » (on descend), répartis sur quatre galeries et le rez-de-chaussée. Source : plans du règlement de copropriété du bâtiment A (1989) ; numéros de lots du C décalés de 501.</div>
+    </div>
+  </section>
+
+  <section class="tabpanel" id="tab-fresnes" role="tabpanel" hidden>
+    <div class="block">
+      <div class="panel-head"><h2>Fresnes : ensemble, appartements, maisons</h2><label class="check hint"><input type="checkbox" id="frFilters"> appliquer les filtres de surface et de pièces</label></div>
+      <div class="legend" id="fresnesLegend"></div>
+      <div class="chart" id="fresnes"></div>
+      <div class="tablewrap"><table id="fresnesTable"></table></div>
+      <div class="hint">Prix médian au m² des ventes d'un seul logement à Fresnes, pour les années cochées. Pour les maisons, le prix comprend le terrain mais il est rapporté à la seule surface habitable.</div>
+    </div>
+  </section>
+
+  <section class="tabpanel" id="tab-sales" role="tabpanel" hidden>
+    <div class="block">
+      <div class="panel-head"><h2>Tableau des ventes</h2>
+        <div class="row"><span class="hint" id="salesCount"></span><button class="chip" type="button" id="csvDl">Exporter en CSV</button><button class="chip ghost" type="button" id="csvCopy">Copier</button></div>
+      </div>
+      <div class="hint" id="csvMsg" hidden></div>
+      <div class="tablewrap"><table id="sales"></table></div>
+      <button class="chip ghost" type="button" id="salesMore" hidden></button>
+    </div>
+  </section>
+
+  <footer>
+    <div>Source : Demandes de valeurs foncières géolocalisées (DGFiP, Etalab), data.gouv.fr, mise à jour <span id="updated"></span>. DVF ne publie que les cinq dernières années. Ventes d'un seul appartement, avec ou sans dépendances ; prix au m² sur la surface réelle bâtie ; valeurs hors de 1 000–12 000 €/m² écartées. Vente atypique : prix au m² inférieur de plus d'un tiers ou supérieur de moitié à la médiane du bâtiment.</div>
+    <div>DVF ne donne ni l'état ni l'exposition du logement. Les conditions de réutilisation interdisent toute tentative de réidentification des parties à la vente.</div>
+  </footer>
+</div>
+<div id="tip" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+const DATA = /*DATA*/;
+const B = Object.fromEntries(DATA.buildings.map(b => [b.id, b]));
+const YEARS = Object.keys(DATA.coverage).map(Number).sort();
+const NIVS = ["Galerie verte", "Galerie bleue", "Galerie jaune", "Galerie rouge", "RdC"];
+const NIVCOL = { "Galerie verte": "#5f9e5a", "Galerie bleue": "#4a78b5", "Galerie jaune": "#d9b13b", "Galerie rouge": "#c4523f", "RdC": "#8a8f88" };
+DATA.sales.forEach((s, i) => s.i = i);
+const fmt = n => n == null ? "–" : Math.round(n).toLocaleString("fr-FR");
+const eur = n => n == null ? "–" : fmt(n) + " €";
+const median = a => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const dateFr = d => d.split("-").reverse().join("/");
+const short = id => B[id].label.replace(/ · .*/, "").replace("Bd Pasteur, ", "Pasteur ");
+
+const st = {
+  sel: new Set(DATA.buildings.filter(b => b.peupleraie).map(b => b.id)),
+  years: new Set(YEARS.filter(y => DATA.coverage[y] > 50)),
+  rooms: new Set([1, 2, 3, 4, 5]), nivs: new Set(NIVS),
+  smin: 0, smax: 200, groupBy: "g", noAty: true, plan: "AC", sort: { key: "med", dir: -1 }
+};
+try { const sv = JSON.parse(localStorage.getItem("peupleraie-v3") || "null");
+  if (sv) { st.sel = new Set(sv.sel.filter(id => B[id])); st.years = new Set(sv.years.filter(y => YEARS.includes(y))); st.rooms = new Set(sv.rooms); st.nivs = new Set(sv.nivs);
+    Object.assign(st, { smin: sv.smin, smax: sv.smax, groupBy: sv.groupBy, noAty: sv.noAty }); } } catch (e) {}
+const save = () => { try { localStorage.setItem("peupleraie-v3", JSON.stringify({ sel: [...st.sel], years: [...st.years], rooms: [...st.rooms], nivs: [...st.nivs], smin: st.smin, smax: st.smax, groupBy: st.groupBy, noAty: st.noAty })); } catch (e) {} };
+
+const weak = YEARS.filter(y => DATA.coverage[y] < 50);
+document.getElementById("coverage").innerHTML = `Données DVF ${YEARS[0]}–${YEARS[YEARS.length - 1]} · ${DATA.sales.length} ventes d'appartements dans les ${DATA.buildings.length} bâtiments de la résidence.` +
+  (weak.length ? ` <b>${weak.join(", ")} est très incomplète</b> (${weak.map(y => DATA.coverage[y]).join(", ")} ventes pour tout Fresnes) et décochée par défaut.` : "");
+document.getElementById("coverage").hidden = false;
+document.getElementById("updated").textContent = DATA.updated || "";
+
+// --- filtres
+const room = p => Math.min(Math.max(p, 1), 5);
+const baseFilter = s => st.years.has(s.y) && s.s >= st.smin && s.s <= st.smax && st.rooms.has(room(s.p)) && !(st.noAty && s.aty);
+const inFilter = s => baseFilter(s) && (!s.niv || st.nivs.has(s.niv));
+const refFilter = r => st.years.has(r[0]) && r[1] >= st.smin && r[1] <= st.smax && st.rooms.has(room(r[2]));
+const filtered = () => DATA.sales.filter(inFilter);
+
+function chips(el, items, set, label) {
+  el.innerHTML = items.map(v => `<button class="chip" type="button" data-v="${v}" aria-pressed="${set.has(v)}">${label(v)}</button>`).join("");
+  el.onclick = e => { const b = e.target.closest(".chip"); if (!b) return; const v = Number(b.dataset.v);
+    set.has(v) ? set.delete(v) : set.add(v); b.setAttribute("aria-pressed", set.has(v)); update(); };
+}
+chips(document.getElementById("years"), YEARS, st.years, y => y + (DATA.coverage[y] < 50 ? " (incomplet)" : ""));
+chips(document.getElementById("rooms"), [1, 2, 3, 4, 5], st.rooms, r => r === 5 ? "5 et +" : r);
+const gb = document.getElementById("groupBy");
+const markGroup = () => gb.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c.dataset.v === st.groupBy));
+gb.onclick = e => { const b = e.target.closest(".chip"); if (!b) return; st.groupBy = b.dataset.v; markGroup(); update(); }; markGroup();
+const smin = document.getElementById("smin"), smax = document.getElementById("smax");
+smin.value = st.smin; smax.value = st.smax;
+const onSurf = () => { st.smin = Number(smin.value) || 0; st.smax = Number(smax.value) || 300; update(); };
+smin.oninput = onSurf; smax.oninput = onSurf;
+document.getElementById("spresets").onclick = e => { const b = e.target.closest(".chip"); if (!b) return;
+  const [a, z] = b.dataset.r.split("-").map(Number); smin.value = a; smax.value = z; onSurf(); };
+const noAty = document.getElementById("noAty"); noAty.checked = st.noAty; noAty.onchange = () => { st.noAty = noAty.checked; update(); };
+const REFS = [{ t: 0, id: "refA", name: "Fresnes appartements", color: "var(--ref)" }, { t: 1, id: "refM", name: "Fresnes maisons", color: "var(--ref2)" }];
+const refOn = { refA: true, refM: false };
+try { const r = JSON.parse(localStorage.getItem("peupleraie-refs") || "null"); if (r) Object.assign(refOn, r); } catch (e) {}
+const activeRefs = () => REFS.filter(r => refOn[r.id]);
+document.querySelectorAll(".refchip").forEach(b => b.onclick = () => { refOn[b.dataset.ref] = !refOn[b.dataset.ref];
+  try { localStorage.setItem("peupleraie-refs", JSON.stringify(refOn)); } catch (e) {} update(); });
+
+// --- onglets
+const TABS = ["compare", "trend", "gal", "fresnes", "sales"];
+function showTab(t) {
+  if (!TABS.includes(t)) t = "compare";
+  TABS.forEach(k => { document.getElementById("tab-" + k).hidden = k !== t; });
+  document.querySelectorAll("#tabs .tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t));
+  try { sessionStorage.setItem("peupleraie-tab", t); } catch (e) {}
+}
+document.getElementById("tabs").onclick = e => { const b = e.target.closest(".tab"); if (b) showTab(b.dataset.tab); };
+document.getElementById("tabs").onkeydown = e => { if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const cur = TABS.findIndex(k => document.getElementById("tab-" + k).hidden === false), n = (cur + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length;
+  showTab(TABS[n]); document.querySelector(`#tabs [data-tab="${TABS[n]}"]`).focus(); };
+let startTab = "compare"; try { startTab = sessionStorage.getItem("peupleraie-tab") || "compare"; } catch (e) {}
+showTab(startTab);
+
+// --- liste des bâtiments
+const SHORTN = { A: "A · Oseraie", B: "B · Favorite", C: "C · Braque", E: "E · Résidence", O: "O · Blancs-Bouleaux", F: "F · Louis Pasteur", H: "H · Convention" };
+const MAPL = { A: "A", B: "B", C: "C", E: "E", O: "O", F: "F", H: "H" };
+function renderList() {
+  const counts = {}; filtered().forEach(s => counts[s.g] = (counts[s.g] || 0) + 1);
+  const chip = b => `<button type="button" class="chip${b.peupleraie ? "" : " alt"}" data-id="${b.id}" aria-pressed="${st.sel.has(b.id)}" title="${esc(b.label)} · entrées ${b.entrees.join(", ")}">${SHORTN[b.id] || esc(b.label)}<span class="n">${counts[b.id] || 0}</span></button>`;
+  const inside = DATA.buildings.filter(b => b.peupleraie), outside = DATA.buildings.filter(b => !b.peupleraie);
+  document.getElementById("bchips").innerHTML = outside.length
+    ? `<div><div class="sublabel">La Peupleraie</div><div class="chips">${inside.map(chip).join("")}</div></div><div><div class="sublabel">En face, pour comparer</div><div class="chips">${outside.map(chip).join("")}</div></div>`
+    : `<div class="chips">${inside.map(chip).join("")}</div>`;
+}
+document.getElementById("bchips").onclick = e => { const b = e.target.closest(".chip"); if (!b) return; const id = b.dataset.id; st.sel.has(id) ? st.sel.delete(id) : st.sel.add(id); update(); };
+document.getElementById("mapkey").innerHTML = DATA.buildings.map(b => `<span><b>${MAPL[b.id] || b.id}</b> ${esc(SHORTN[b.id] || b.label).replace(/^[A-Z] · /, "")}${b.peupleraie ? "" : " (en face)"}</span>`).join("");
+document.getElementById("selNone").onclick = () => { st.sel = new Set(); update(); };
+
+// --- plan
+const map = L.map("map", { scrollWheelZoom: false, zoomSnap: 0.5 });
+const tiles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 20, maxNativeZoom: 19, attribution: "© contributeurs OpenStreetMap" }).addTo(map);
+let tileErr = 0; tiles.on("tileerror", () => { if (++tileErr === 3) document.getElementById("tilenote").textContent += " Le fond de carte ne se charge pas dans cet aperçu ; il s'affiche sur le site publié."; });
+map.fitBounds(L.latLngBounds(DATA.buildings.map(b => [b.lat, b.lon])).pad(0.2));
+const markers = {}, labels = {};
+DATA.buildings.forEach(b => {
+  const m = L.circleMarker([b.lat, b.lon], { radius: 10, weight: 2 }).addTo(map);
+  m.on("click", () => { st.sel.has(b.id) ? st.sel.delete(b.id) : st.sel.add(b.id); update(); });
+  markers[b.id] = m;
+  labels[b.id] = L.marker([b.lat, b.lon], { interactive: false, icon: L.divIcon({ className: "", html: `<span class="maplabel">${esc(MAPL[b.id] || b.id)}</span>`, iconSize: [0, 0] }) }).addTo(map);
+});
+const SEQ = ["--seq-1", "--seq-2", "--seq-3", "--seq-4", "--seq-5"];
+let scale = { lo: 0, hi: 1 };
+const seqColor = med => { if (med == null) return css("--nodata"); const k = Math.min(4, Math.max(0, Math.floor((med - scale.lo) / ((scale.hi - scale.lo) / 5 || 1)))); return css(SEQ[k]); };
+function renderMap() {
+  const by = {}; filtered().forEach(s => (by[s.g] = by[s.g] || []).push(s.m2));
+  const meds = Object.values(by).map(median).sort((a, b) => a - b);
+  scale = { lo: meds.length ? meds[0] : 0, hi: meds.length ? meds[meds.length - 1] : 1 };
+  document.getElementById("ramp").innerHTML = SEQ.map(v => `<i style="background:var(${v})"></i>`).join("");
+  document.getElementById("rampLabels").textContent = meds.length ? `${fmt(scale.lo)} → ${fmt(scale.hi)} €/m²` : "";
+  DATA.buildings.forEach(b => {
+    const arr = by[b.id] || [], med = median(arr), sel = st.sel.has(b.id);
+    markers[b.id].setStyle({ radius: 8 + Math.min(12, Math.sqrt(arr.length) * 2.2), fillColor: seqColor(med), fillOpacity: sel ? 0.95 : 0.35,
+      color: sel ? css("--sel") : css("--ink-3"), weight: sel ? 4 : 1, dashArray: sel ? null : "3 3" });
+    markers[b.id].bindTooltip(`<b>${esc(b.label)}</b><br>Entrées ${b.entrees.join(", ")}<br>${arr.length} vente${arr.length > 1 ? "s" : ""}${med != null ? " · médiane " + fmt(med) + " €/m²" : ""}<br><span style="color:var(--ink-3)">${sel ? "Clic pour retirer" : "Clic pour ajouter"}</span>`, { direction: "top", offset: [0, -8] });
+    if (sel) markers[b.id].bringToFront();
+  });
+}
+
+// --- regroupements
+const KEY = {
+  g: s => s.g, e: s => s.g + "|" + (s.e || "?"), p: s => String(room(s.p)),
+  niv: s => s.niv || null, md: s => s.md ? (s.md === "M" ? "Montant" : "Descendant") : null
+};
+const LABEL = {
+  g: k => B[k].label, e: k => { const [g, e] = k.split("|"); return `${short(g)} · n° ${e}`; },
+  p: k => k === "5" ? "5 pièces et +" : `${k} pièce${k > 1 ? "s" : ""}`, niv: k => k, md: k => k
+};
+function groups() {
+  const sales = filtered().filter(s => st.sel.has(s.g)), g = new Map();
+  sales.forEach(s => { const k = KEY[st.groupBy](s); if (k == null) return; if (!g.has(k)) g.set(k, []); g.get(k).push(s); });
+  return { sales, list: [...g].map(([k, ss]) => ({ k, label: LABEL[st.groupBy](k), ss, med: median(ss.map(s => s.m2)) })),
+    note: (st.groupBy === "niv" || st.groupBy === "md") && !st.sel.has("A") && !st.sel.has("C") ? "Cochez le bâtiment A ou C : la galerie n'est connue que pour eux." : "" };
+}
+const refRows = t => DATA.refsales.filter(r => r[4] === t && refFilter(r));
+const refVals = t => refRows(t).map(r => r[3]);
+
+function renderSummary(G) {
+  const m = G.sales.map(s => s.m2), mr = median(refVals(0)), md = median(m);
+  const diff = md != null && mr ? Math.round((md / mr - 1) * 100) : null;
+  const tile = (v, u, l, cls = "") => `<div class="stat ${cls}"><b>${v}${u ? `<small>${u}</small>` : ""}</b><span>${l}</span></div>`;
+  document.getElementById("summary").innerHTML =
+    tile(md != null ? fmt(md) : "–", "€/m²", "médiane de votre sélection", "lead") +
+    tile(mr != null ? fmt(mr) : "–", "€/m²", "médiane Fresnes, appartements") +
+    tile(diff == null ? "–" : (diff > 0 ? "+" : diff < 0 ? "−" : "") + Math.abs(diff), "%", diff == null ? "écart avec Fresnes" : diff === 0 ? "au niveau de Fresnes" : diff > 0 ? "au-dessus de Fresnes" : "sous Fresnes") +
+    tile(G.sales.length, "", `vente${G.sales.length > 1 ? "s" : ""} retenue${G.sales.length > 1 ? "s" : ""}`);
+  const n = DATA.sales.filter(s => s.aty && st.sel.has(s.g)).length;
+  document.getElementById("atyCount").textContent = n ? `(${n} dans la sélection)` : "";
+}
+
+// --- infobulle
+const tip = document.getElementById("tip");
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; const r = tip.getBoundingClientRect();
+  let x = e.clientX + 14, y = e.clientY + 14; if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14; if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+  tip.style.left = x + "px"; tip.style.top = y + "px"; }
+const hideTip = () => { tip.hidden = true; };
+const where = s => `${short(s.g)}${s.e ? ", n° " + s.e : ""}${s.niv ? " · " + s.niv + (s.md ? (s.md === "M" ? ", montant" : ", descendant") : "") : ""}`;
+const saleTip = s => `<b>${esc(where(s))}</b><br>${dateFr(s.d)} · ${s.s} m² · ${s.p || "?"} p.${s.typ ? " (" + s.typ + ")" : ""}<br>${eur(s.v)} · <b>${fmt(s.m2)} €/m²</b>${s.dep ? `<br>avec ${s.dep} dépendance${s.dep > 1 ? "s" : ""} (cave, parking…)` : ""}${s.aty ? "<br><i>Vente atypique</i>" : ""}`;
+
+function niceTicks(lo, hi, n = 6) { const raw = (hi - lo) / n, p = Math.pow(10, Math.floor(Math.log10(raw))), sp = [1, 2, 2.5, 5, 10].map(k => k * p).find(k => k >= raw);
+  const t = []; for (let v = Math.ceil(lo / sp) * sp; v <= hi + 1e-9; v += sp) t.push(v); return t; }
+
+// --- comparaison vente par vente
+function renderStrip(G) {
+  const el = document.getElementById("strip"), rows = [...G.list].sort((a, b) => b.med - a.med);
+  const refs = activeRefs().map(r => ({ ...r, v: refVals(r.t) })).filter(r => r.v.length);
+  if (!rows.length) { el.innerHTML = `<p class="empty">${G.note || "Aucune vente ne correspond : sélectionnez des bâtiments sur le plan ou élargissez les filtres."}</p>`; return; }
+  const all = rows.flatMap(r => r.ss.map(s => s.m2)).concat(refs.map(r => median(r.v)));
+  let lo = Math.min(...all), hi = Math.max(...all); const pad = (hi - lo) * 0.06 || 200; lo -= pad; hi += pad;
+  const W = 900, L0 = 230, R0 = 96, rh = 36, n = rows.length + refs.length, H = 40 + n * rh;
+  const x = v => L0 + (v - lo) / (hi - lo) * (W - L0 - R0);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Prix au m² par vente"><g class="axis">` +
+    niceTicks(lo, hi).map(t => `<line x1="${x(t)}" x2="${x(t)}" y1="18" y2="${H - 22}" stroke="var(--grid)" stroke-width="1"/><text x="${x(t)}" y="${H - 6}" text-anchor="middle">${fmt(t)}</text>`).join("") + `</g>`;
+  s += `<text x="${W - R0 + 8}" y="12" style="font-family:var(--f-mono);font-size:10px;fill:var(--ink-3)">méd. · nb</text>`;
+  rows.forEach((r, i) => {
+    const y = 34 + i * rh, v = r.ss.map(q => q.m2), mn = Math.min(...v), mx = Math.max(...v);
+    s += `<text x="${L0 - 12}" y="${y + 4}" text-anchor="end">${esc(r.label.length > 34 ? r.label.slice(0, 33) + "…" : r.label)}</text>`;
+    s += `<line x1="${x(mn)}" x2="${x(mx)}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="2" stroke-linecap="round"/>`;
+    r.ss.forEach((q, j) => { s += `<circle class="sd" data-i="${q.i}" cx="${x(q.m2)}" cy="${y + ((j % 3) - 1) * 4}" r="5.5" fill="${q.niv && st.groupBy !== "niv" ? NIVCOL[q.niv] : "var(--accent)"}" fill-opacity="0.8" stroke="var(--panel)" stroke-width="1.5"/>`; });
+    s += `<line x1="${x(r.med)}" x2="${x(r.med)}" y1="${y - 11}" y2="${y + 11}" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>`;
+    s += `<text x="${W - R0 + 8}" y="${y + 4}" style="font-family:var(--f-mono);font-size:11px">${fmt(r.med)} · ${r.ss.length}</text>`;
+  });
+  refs.forEach((r, k) => {
+    const y = 34 + (rows.length + k) * rh, srt = [...r.v].sort((a, b) => a - b), q = p => srt[Math.floor(p * (srt.length - 1))], m = median(r.v);
+    const x1 = x(Math.max(lo, q(.25))), x2 = x(Math.min(hi, q(.75)));
+    s += `<text x="${L0 - 12}" y="${y + 4}" text-anchor="end" style="font-style:italic">${r.name} (mêmes filtres)</text>`;
+    s += `<rect class="refbar" data-tip="${r.name}, mêmes filtres : la moitié des ventes entre ${fmt(q(.25))} et ${fmt(q(.75))} €/m²" x="${Math.min(x1, x2)}" y="${y - 5}" width="${Math.max(2, Math.abs(x2 - x1))}" height="10" rx="3" fill="${r.color}" fill-opacity="0.3"/>`;
+    s += `<line x1="${x(m)}" x2="${x(m)}" y1="${y - 11}" y2="${y + 11}" stroke="${r.color}" stroke-width="2.5" stroke-dasharray="3 2"/>`;
+    s += `<text x="${W - R0 + 8}" y="${y + 4}" style="font-family:var(--f-mono);font-size:11px">${fmt(m)} · ${r.v.length}</text>`;
+  });
+  el.innerHTML = s + `</svg>` + (G.list.some(r => r.ss.some(q => q.niv)) && st.groupBy !== "niv"
+    ? `<div class="legend">${NIVS.map(n => `<span><i style="background:${NIVCOL[n]};height:10px;width:10px;border-radius:50%"></i>${n} (bât. A et C)</span>`).join("")}<span><i style="background:var(--accent);height:10px;width:10px;border-radius:50%"></i>autres bâtiments</span></div>` : "");
+  el.querySelectorAll(".sd").forEach(c => { c.onmousemove = e => showTip(e, saleTip(DATA.sales[+c.dataset.i])); c.onmouseleave = hideTip; });
+  el.querySelectorAll(".refbar").forEach(rb => { rb.onmousemove = e => showTip(e, esc(rb.dataset.tip)); rb.onmouseleave = hideTip; });
+}
+
+// --- tableau
+const COLS = [["label", "Groupe"], ["n", "Ventes"], ["surf", "Surface méd."], ["min", "Min €/m²"], ["med", "Médiane €/m²"], ["max", "Max €/m²"], ["prix", "Prix méd."]];
+function statsOf(ss) { const v = ss.map(s => s.m2); return { n: ss.length, surf: median(ss.map(s => s.s)), min: Math.min(...v), med: median(v), max: Math.max(...v), prix: median(ss.map(s => s.v)) }; }
+function renderTable(G) {
+  const t = document.getElementById("table");
+  if (!G.list.length) { t.innerHTML = `<tr><td class="empty">${G.note || "Aucune vente avec ces réglages."}</td></tr>`; return; }
+  const rows = G.list.map(r => ({ label: r.label, ...statsOf(r.ss) }));
+  const { key, dir } = st.sort; rows.sort((a, b) => (typeof a[key] === "string" ? a[key].localeCompare(b[key], "fr") : (a[key] ?? 0) - (b[key] ?? 0)) * dir);
+  const cell = (r, k) => k === "label" ? esc(r.label) : k === "n" ? r.n : k === "surf" ? fmt(r.surf) + " m²" : k === "prix" ? eur(r.prix) : fmt(r[k]);
+  let h = `<thead><tr>${COLS.map(([k, l]) => `<th data-k="${k}" ${k === key ? `aria-sort="${dir > 0 ? "ascending" : "descending"}"` : ""}>${l}</th>`).join("")}</tr></thead><tbody>`;
+  h += rows.map(r => `<tr class="${r.n < 3 ? "few" : ""}">${COLS.map(([k]) => `<td>${cell(r, k)}</td>`).join("")}</tr>`).join("");
+  if (G.list.length > 1) { const all = { label: "Ensemble de la sélection", ...statsOf(G.list.flatMap(r => r.ss)) }; h += `<tr class="total">${COLS.map(([k]) => `<td>${cell(all, k)}</td>`).join("")}</tr>`; }
+  activeRefs().forEach(rf => { const rr = refRows(rf.t);
+    if (rr.length) { const v = rr.map(r => r[3]); const ref = { label: `${rf.name} (mêmes filtres)`, n: rr.length, surf: median(rr.map(r => r[1])), min: Math.min(...v), med: median(v), max: Math.max(...v), prix: null };
+      h += `<tr class="ref">${COLS.map(([k]) => `<td>${cell(ref, k)}</td>`).join("")}</tr>`; } });
+  t.innerHTML = h + "</tbody>";
+  t.querySelectorAll("th").forEach(th => th.onclick = () => { const k = th.dataset.k; st.sort = { key: k, dir: st.sort.key === k ? -st.sort.dir : (k === "label" ? 1 : -1) }; renderTable(groups()); });
+}
+
+const lum = hex => { const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim()); if (!m) return 1;
+  const c = [0, 2, 4].map(i => parseInt(m[1].substr(i, 2), 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+// --- schéma du bâtiment A
+function renderBatA() {
+  const el = document.getElementById("bata"), ss = DATA.sales.filter(s => st.plan.includes(s.g) && s.niv && baseFilter(s));
+  let h = `<div class="bata"><span></span><span class="h">Escalier A · portes 2 à 10</span><span class="h">Escalier B · portes 10 à 18</span>`;
+  NIVS.forEach(n => {
+    h += `<span class="lv"><i style="background:${NIVCOL[n]}"></i>${n === "RdC" ? "Rez-de-chaussée" : n}</span>`;
+    ["A", "B"].forEach(e => {
+      const v = ss.filter(s => s.niv === n && s.esc === e), med = median(v.map(s => s.m2)), bg = seqColor(med);
+      const cls = lum(bg) < 0.3 ? "lt" : "dk";
+      const mm = v.length ? `${v.filter(s => s.md === "M").length} mont. · ${v.filter(s => s.md === "D").length} desc.` : "";
+      h += `<button type="button" class="cell ${cls}" data-n="${n}" aria-pressed="${st.nivs.has(n)}" style="background:${bg}">
+        <b>${med != null ? fmt(med) + " €/m²" : "–"}</b><span>${v.length} vente${v.length > 1 ? "s" : ""}${mm ? " · " + mm : ""}</span></button>`;
+    });
+  });
+  el.innerHTML = h + `</div>`;
+  el.querySelectorAll(".cell").forEach(c => c.onclick = () => { const n = c.dataset.n; st.nivs.has(n) ? st.nivs.delete(n) : st.nivs.add(n); if (!st.nivs.size) NIVS.forEach(x => st.nivs.add(x)); update(); });
+}
+
+const planEl = document.getElementById("plan");
+const markPlan = () => planEl.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c.dataset.v === st.plan));
+planEl.onclick = e => { const b = e.target.closest(".chip"); if (!b) return; st.plan = b.dataset.v; markPlan(); renderBatA(); }; markPlan();
+
+// --- évolution
+function lineChart(el, legendEl, ys, series, labelAll) {
+  legendEl.innerHTML = series.map(s => `<span><i class="${s.dash ? "dash" : ""}" style="background:${s.color}"></i>${s.name}</span>`).join("");
+  const vals = series.flatMap(s => s.pts.filter(p => p.med != null).map(p => p.med));
+  if (!ys.length || !vals.length) { el.innerHTML = `<p class="empty">Pas assez de ventes pour tracer une évolution.</p>`; return; }
+  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.15 || 300; lo = Math.max(0, lo - pad); hi += pad;
+  const W = 900, H = 300, L0 = 56, R0 = 24, T0 = 22, B0 = 32;
+  const x = y => ys.length === 1 ? (L0 + W - R0) / 2 : L0 + 20 + (y - ys[0]) / (ys[ys.length - 1] - ys[0]) * (W - L0 - R0 - 40), yy = v => T0 + (1 - (v - lo) / (hi - lo)) * (H - T0 - B0);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution du prix médian au m²"><g class="axis">`;
+  niceTicks(lo, hi, 5).forEach(t => { s += `<line x1="${L0}" x2="${W - R0}" y1="${yy(t)}" y2="${yy(t)}" stroke="var(--grid)"/><text x="${L0 - 8}" y="${yy(t) + 4}" text-anchor="end">${fmt(t)}</text>`; });
+  ys.forEach(y => { s += `<text x="${x(y)}" y="${H - 10}" text-anchor="middle">${y}</text>`; });
+  s += `</g>`;
+  series.forEach((se, si) => {
+    const pts = se.pts.filter(p => p.med != null);
+    if (pts.length > 1) s += `<polyline fill="none" stroke="${se.color}" stroke-width="2" stroke-linejoin="round" ${se.dash ? 'stroke-dasharray="6 4"' : ""} points="${pts.map(p => `${x(p.y)},${yy(p.med)}`).join(" ")}"/>`;
+    pts.forEach(p => { s += `<circle cx="${x(p.y)}" cy="${yy(p.med)}" r="5" fill="${p.n < 3 ? "var(--panel)" : se.color}" stroke="${se.color}" stroke-width="2"/><circle class="hit" data-s="${si}" data-y="${p.y}" cx="${x(p.y)}" cy="${yy(p.med)}" r="14" fill="transparent"/>`; });
+    if (si === 0 || labelAll) pts.forEach(p => { s += `<text x="${x(p.y)}" y="${yy(p.med) + (labelAll && si === 1 ? 21 : -12)}" text-anchor="middle" style="font-family:var(--f-mono);font-size:11px;fill:var(--ink)">${fmt(p.med)}</text>`; });
+  });
+  el.innerHTML = s + `</svg>`;
+  el.querySelectorAll(".hit").forEach(c => { c.onmousemove = e => { const se = series[+c.dataset.s], p = se.pts.find(q => q.y === +c.dataset.y);
+    showTip(e, `<b>${se.name}, ${p.y}</b><br>médiane ${fmt(p.med)} €/m² · ${p.n} vente${p.n > 1 ? "s" : ""}`); }; c.onmouseleave = hideTip; });
+}
+const pointsBy = (rows, ys) => ys.map(y => { const v = rows.filter(r => r[0] === y).map(r => r[3]); return { y, med: median(v), n: v.length }; });
+
+function renderTrend(G) {
+  const ys = YEARS.filter(y => st.years.has(y));
+  const series = [{ name: "Sélection", color: "var(--accent)", dash: false, pts: ys.map(y => { const v = G.sales.filter(s => s.y === y).map(s => s.m2); return { y, med: median(v), n: v.length }; }) }];
+  activeRefs().forEach(rf => series.push({ name: `${rf.name} (mêmes filtres)`, color: rf.color, dash: true, pts: pointsBy(refRows(rf.t), ys) }));
+  lineChart(document.getElementById("trend"), document.getElementById("trendLegend"), ys, series);
+}
+
+// --- Fresnes : ensemble, appartements, maisons
+function renderFresnes() {
+  const ys = YEARS.filter(y => st.years.has(y)), useF = document.getElementById("frFilters").checked;
+  const rows = DATA.refsales.filter(r => useF ? refFilter(r) : st.years.has(r[0]));
+  const series = [
+    { name: "Fresnes, ensemble", color: "var(--ink-2)", dash: false, pts: pointsBy(rows, ys) },
+    { name: "Fresnes, appartements", color: "var(--ref)", dash: false, pts: pointsBy(rows.filter(r => r[4] === 0), ys) },
+    { name: "Fresnes, maisons", color: "var(--ref2)", dash: false, pts: pointsBy(rows.filter(r => r[4] === 1), ys) }];
+  lineChart(document.getElementById("fresnes"), document.getElementById("fresnesLegend"), ys, series, true);
+  const t = document.getElementById("fresnesTable");
+  t.innerHTML = `<thead><tr><th>Année</th>${series.map(s => `<th>${s.name.replace("Fresnes, ", "")} €/m²</th><th>ventes</th>`).join("")}</tr></thead><tbody>` +
+    ys.map((y, i) => `<tr><td>${y}</td>${series.map(s => `<td>${fmt(s.pts[i].med)}</td><td>${s.pts[i].n}</td>`).join("")}</tr>`).join("") + `</tbody>`;
+}
+document.getElementById("frFilters").onchange = () => renderFresnes();
+
+// --- ventes une à une
+let showAllSales = false;
+document.getElementById("salesMore").onclick = () => { showAllSales = !showAllSales; renderSales(); };
+function renderSales() {
+  const ss = DATA.sales.filter(s => st.sel.has(s.g) && st.years.has(s.y) && s.s >= st.smin && s.s <= st.smax && st.rooms.has(room(s.p)) && (!s.niv || st.nivs.has(s.niv))).sort((a, b) => b.d.localeCompare(a.d));
+  lastSales = ss;
+  const shown = ss.filter(s => !(st.noAty && s.aty)).length;
+  document.getElementById("salesCount").textContent = `${shown} vente${shown > 1 ? "s" : ""}, les plus récentes en premier${st.noAty && ss.length > shown ? " ; barrées : atypiques, écartées des calculs" : ""}`;
+  document.getElementById("sales").innerHTML = ss.length ? `<thead><tr><th>Bâtiment</th><th>Entrée</th><th>Galerie</th><th>Date</th><th>Surface</th><th>Pièces</th><th>Prix</th><th>€/m²</th><th>Dép.</th></tr></thead><tbody>` +
+    (showAllSales ? ss : ss.slice(0, 30)).map(s => `<tr class="${s.aty ? "aty" : ""}"><td>${esc(short(s.g))}</td><td>${s.e || "–"}</td><td>${s.niv ? `<span class="tag">${s.niv.replace("Galerie ", "")}${s.md ? " · " + (s.md === "M" ? "mont." : "desc.") : ""}</span>` : ""}</td><td>${dateFr(s.d)}</td><td>${s.s} m²</td><td>${s.p || "?"}${s.typ ? " (" + s.typ + ")" : ""}</td><td>${eur(s.v)}</td><td>${fmt(s.m2)}</td><td>${s.dep || ""}</td></tr>`).join("") + "</tbody>"
+    : `<tr><td class="empty">Aucune vente avec ces réglages.</td></tr>`;
+  const more = document.getElementById("salesMore"); more.hidden = ss.length <= 30;
+  more.textContent = showAllSales ? "Réduire la liste" : `Afficher les ${ss.length} ventes`;
+}
+
+// --- export CSV (séparateur « ; », virgule décimale : s'ouvre directement dans Excel)
+let lastSales = [];
+function salesCsv() {
+  const q = v => { const t = String(v ?? ""); return /[;"\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  const head = ["Bâtiment", "Entrée", "Galerie", "Duplex", "Date", "Surface m²", "Pièces", "Type", "Prix €", "€/m²", "Dépendances", "Atypique"];
+  const rows = lastSales.map(s => [B[s.g].label, s.e || "", s.niv || "", s.md === "M" ? "montant" : s.md === "D" ? "descendant" : "", s.d, s.s, s.p || "", s.typ || "", s.v, s.m2, s.dep, s.aty ? "oui" : ""]);
+  return [head, ...rows].map(r => r.map(q).join(";")).join("\r\n");
+}
+const csvMsg = t => { const m = document.getElementById("csvMsg"); m.textContent = t; m.hidden = false; };
+document.getElementById("csvDl").onclick = () => {
+  try {
+    const url = URL.createObjectURL(new Blob(["\ufeff" + salesCsv()], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a"); a.href = url; a.download = `ventes-peupleraie-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+    csvMsg(`${lastSales.length} ventes exportées. Si aucun fichier n'apparaît, utilisez « Copier » puis collez dans un tableur.`);
+  } catch (e) { csvMsg("Le téléchargement est bloqué ici : utilisez « Copier » puis collez dans un tableur."); }
+};
+document.getElementById("csvCopy").onclick = () => {
+  const text = salesCsv();
+  navigator.clipboard.writeText(text).then(() => csvMsg(`${lastSales.length} ventes copiées : collez-les dans Excel ou un tableur.`))
+    .catch(() => csvMsg("La copie automatique est refusée par ce navigateur."));
+};
+
+function update() {
+  renderList();
+  const G = groups();
+  renderMap(); renderSummary(G); renderStrip(G); renderTable(G); renderBatA(); renderTrend(G); renderFresnes(); renderSales(); save();
+  document.getElementById("tabSalesN").textContent = G.sales.length;
+  document.querySelectorAll(".refchip").forEach(b => b.setAttribute("aria-pressed", !!refOn[b.dataset.ref]));
+}
+update();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update);
+new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+</script>
