@@ -13,6 +13,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from .config import (
@@ -226,6 +227,53 @@ def _stats(prix: pd.Series) -> dict[str, Any]:
     return {"n": n, "med": int(prix.median()), "q1": int(prix.quantile(0.25)), "q3": int(prix.quantile(0.75))}
 
 
+MIN_LIEN = 20  # ventes rapprochées minimum pour estimer un lien
+MIN_CLASSES_LIEN = 2  # classes d'étiquette représentées (au moins 5 ventes chacune)
+RANG = {e: i for i, (_, liste) in enumerate(GROUPES_ETIQUETTES) for e in liste}
+
+
+def ecarts(ventes: pd.DataFrame, appariement: pd.DataFrame) -> pd.DataFrame:
+    """Pour chaque vente rapprochée d'un DPE : écart (rapport) du prix au m² au prix typique du bâtiment la même année.
+
+    Le prix typique est la médiane des ventes non atypiques du même bâtiment et de la même année (3 ventes au moins).
+    """
+    base = ventes.query("aty == 0")
+    base = base.assign(
+        typique=base.groupby(["bat", "annee"]).pm2.transform("median"),
+        effectif=base.groupby(["bat", "annee"]).pm2.transform("size"),
+        surface_typique=base.groupby("bat").surface_reelle_bati.transform("median"),
+    )
+    v = base.join(appariement[["etiquette"]]).dropna(subset=["etiquette"])
+    v = v[v.effectif >= 3]
+    return pd.DataFrame(
+        {
+            "classe": v.etiquette.map(RANG),
+            "log_ecart": np.log(v.pm2 / v.typique),
+            "log_surface": np.log(v.surface_reelle_bati / v.surface_typique),
+        }
+    )
+
+
+def lien(e: pd.DataFrame, tirages: int = 2000) -> dict[str, Any]:
+    """Effet d'un cran d'étiquette sur le prix (à bâtiment, année et surface comparables), avec intervalle à 95 %."""
+    n = len(e)
+    par_classe = e.classe.value_counts()
+    if n < MIN_LIEN or (par_classe >= MIN_GROUPE).sum() < MIN_CLASSES_LIEN:
+        return {"n": n, "verdict": "trop_peu"}
+    x = np.column_stack([np.ones(n), e.classe.to_numpy(float), e.log_surface.to_numpy(float)])
+    y = e.log_ecart.to_numpy(float)
+
+    def pente(idx: np.ndarray) -> float:
+        return float(np.linalg.lstsq(x[idx], y[idx], rcond=None)[0][1])
+
+    rng = np.random.default_rng(0)
+    pentes = [pente(rng.integers(0, n, n)) for _ in range(tirages)]
+    bas, haut = np.percentile(pentes, [2.5, 97.5])
+    pct = lambda b: round((float(np.exp(b)) - 1) * 100, 1)  # noqa: E731
+    verdict = "aucun" if bas <= 0 <= haut else ("negatif" if haut < 0 else "positif")
+    return {"n": n, "verdict": verdict, "effet": pct(pente(np.arange(n))), "ic": [pct(bas), pct(haut)]}
+
+
 def agreger(dpe: pd.DataFrame, ventes: pd.DataFrame, appariement: pd.DataFrame) -> dict[str, Any]:
     """Effectifs d'étiquettes par bâtiment et prix au m² par classe. `ventes` : colonnes bat, pm2, aty."""
     parc = logements(dpe)
@@ -252,7 +300,23 @@ def agreger(dpe: pd.DataFrame, ventes: pd.DataFrame, appariement: pd.DataFrame) 
         if len(sous) >= MIN_GROUPE:
             prix[b.code] = par_groupe(sous)
 
+    e = ecarts(ventes, appariement)
+    par_ecart = {}
+    for nom, liste in GROUPES_ETIQUETTES:
+        x = e[e.classe == RANG[liste[0]]].log_ecart.map(lambda b: (float(np.exp(b)) - 1) * 100)
+        par_ecart[nom] = (
+            {"n": len(x)}
+            if len(x) < MIN_GROUPE
+            else {
+                "n": len(x),
+                "med": round(float(x.median()), 1),
+                "q1": round(float(x.quantile(0.25)), 1),
+                "q3": round(float(x.quantile(0.75)), 1),
+            }
+        )
     return {
+        "ecart": par_ecart,
+        "lien": lien(e),
         "maj": dpe.date.max().strftime("%d/%m/%Y"),
         "n_logements": len(parc),
         "repartition": repartition,

@@ -107,3 +107,28 @@ def test_colonnes_utiles_sont_demandees_a_l_api():
     from peupleraie.config import DPE_CHAMPS
 
     assert set(dpe.COLONNES_UTILES) <= set(DPE_CHAMPS)
+
+
+def _ecarts(classes, effet, bruit, seed=1):
+    import numpy as np
+
+    rng = np.random.default_rng(seed)
+    c = np.array(classes)
+    return pd.DataFrame(
+        {"classe": c, "log_ecart": effet * c + rng.normal(0, bruit, len(c)), "log_surface": rng.normal(0, 0.1, len(c))}
+    )
+
+
+def test_lien_negatif_net():
+    r = dpe.lien(_ecarts([0, 1, 2, 3] * 15, -0.05, 0.01), tirages=300)
+    assert r["verdict"] == "negatif" and r["ic"][1] < 0 and -6 < r["effet"] < -4
+
+
+def test_lien_non_demontrable_quand_le_bruit_domine():
+    r = dpe.lien(_ecarts([0, 1, 2, 3] * 6, 0.0, 0.15), tirages=300)
+    assert r["verdict"] == "aucun" and r["ic"][0] <= 0 <= r["ic"][1]
+
+
+def test_lien_trop_peu_de_ventes():
+    assert dpe.lien(_ecarts([0, 1, 2, 3] * 3, -0.05, 0.01))["verdict"] == "trop_peu"
+    assert dpe.lien(_ecarts([1] * 30, 0.0, 0.1))["verdict"] == "trop_peu"  # une seule classe

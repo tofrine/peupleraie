@@ -12,6 +12,9 @@
 .ebar i + i { border-left: 2px solid var(--panel); }
 .ekey { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--ink-2); margin: 4px 0 10px; }
 .ekey span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; background: var(--c); }
+.verdict { border-radius: 10px; padding: 12px 14px; margin: 4px 0 14px; font-size: 15px; line-height: 1.45; background: var(--warn-bg); color: var(--warn-fg); }
+.verdict.found { background: var(--accent-soft); color: var(--ink); }
+.verdict b { font-weight: 700; }
 .eprice td.dim { color: var(--ink-3); }
 .eprice small { color: var(--ink-3); font-family: var(--f-mono); font-size: 11px; }
 @media (max-width: 600px) { .erow { grid-template-columns: 1fr 56px; } .erow .elab { grid-column: 1 / -1; } }
@@ -316,6 +319,12 @@ footer { font-size: 13px; color: var(--ink-3); display: grid; gap: 4px; max-widt
       <div class="panel-head"><h2>Prix au m² selon l'étiquette</h2><span class="hint">Ventes rapprochées d'un DPE, hors ventes atypiques</span></div>
       <div class="tablewrap"><table id="energiePrix" class="eprice"></table></div>
       <div class="hint" id="energieMatch"></div>
+    </div>
+    <div class="block">
+      <div class="panel-head"><h2>Le prix dépend-il de l'étiquette ?</h2><span class="hint">À bâtiment, année et surface comparables</span></div>
+      <div class="verdict" id="energieVerdict"></div>
+      <div class="tablewrap"><table id="energieEcart" class="eprice"></table></div>
+      <div class="hint">Écart du prix au m² d'une vente à celui des autres ventes du même bâtiment la même année (médiane), regroupé par étiquette. Médiane et, entre parenthèses, la moitié centrale des ventes. Une corrélation n'est pas une preuve : l'étage, l'état du logement ou la rénovation jouent aussi.</div>
     </div>
   </section>
 
@@ -659,6 +668,15 @@ function renderEnergie() {
   document.getElementById("energiePrix").innerHTML = `<thead><tr><th>Étiquette</th>${cols.map((c, i) => `<th>${name(c)} €/m²</th>${i === 0 ? "<th>Écart à D</th>" : ""}`).join("")}</tr></thead><tbody>` +
     Object.keys(D.prix.TOUS).map(g => { const s = D.prix.TOUS[g], ec = ref && s.med && g !== "D" ? Math.round((s.med / ref - 1) * 100) : null;
       return `<tr><td>${g}</td>${cols.map((c, i) => `<td>${cell(D.prix[c][g])}</td>${i === 0 ? `<td>${ec == null ? "–" : (ec > 0 ? "+" : "") + ec + " %"}</td>` : ""}`).join("")}</tr>`; }).join("") + `</tbody>`;
+  const L = D.lien, pc = v => (v > 0 ? "+" : "") + String(v).replace(".", ",") + " %", V = document.getElementById("energieVerdict");
+  const reserve = " L'intervalle est large parce que les ventes rapprochées d'un DPE sont peu nombreuses.";
+  const msg = { trop_peu: `<b>Trop peu de ventes pour conclure.</b> Seules ${L.n} ventes sont rapprochées d'un DPE avec un prix de comparaison fiable ; il en faudrait au moins 20, réparties sur au moins deux classes d'étiquette.`,
+    aucun: `<b>On ne peut pas conclure à un lien entre l'étiquette et le prix.</b> Sur ${L.n} ventes, l'écart estimé est de ${pc(L.effet)} par classe d'étiquette, avec un intervalle de confiance à 95 % de ${pc(L.ic && L.ic[0])} à ${pc(L.ic && L.ic[1])} : il contient 0, donc les données sont compatibles avec <b>aucun effet</b>.${reserve}`,
+    negatif: `<b>Les logements moins bien classés se vendent moins cher :</b> environ ${pc(L.effet)} par classe d'étiquette (de A–C vers F–G), intervalle de confiance à 95 % de ${pc(L.ic && L.ic[0])} à ${pc(L.ic && L.ic[1])}, sur ${L.n} ventes.${reserve}`,
+    positif: `<b>Résultat inattendu :</b> les logements moins bien classés se vendent plutôt plus cher (${pc(L.effet)} par classe, intervalle à 95 % de ${pc(L.ic && L.ic[0])} à ${pc(L.ic && L.ic[1])}, ${L.n} ventes). Cela vient très probablement d'autres différences (étage, état, rénovation) et non de l'étiquette.${reserve}` }[L.verdict];
+  V.innerHTML = msg; V.classList.toggle("found", L.verdict === "negatif" || L.verdict === "positif");
+  document.getElementById("energieEcart").innerHTML = `<thead><tr><th>Étiquette</th><th>écart au prix typique</th><th>ventes</th></tr></thead><tbody>` +
+    Object.entries(D.ecart).map(([g, s]) => `<tr><td>${g}</td><td>${s.med != null ? `${pc(s.med)} <small>(${pc(s.q1)} à ${pc(s.q3)})</small>` : "–"}</td><td>${s.n}</td></tr>`).join("") + `</tbody>`;
   const m = D.rapprochement;
   document.getElementById("energieMatch").innerHTML = `${m.apparie} ventes sur ${m.ventes} ont pu être rapprochées d'un DPE sans ambiguïté (même bâtiment et même entrée, DPE établi dans les deux ans avant la vente, surface proche) ; ${m.ambigu} étaient ambiguës et ${m.aucun} sans DPE correspondant. `
     + "Un prix plus bas pour une mauvaise étiquette peut aussi venir de l'étage, de l'état du logement ou de l'année de la vente : ces écarts ne sont pas corrigés. Aucun chiffre n'est affiché pour moins de 5 logements ou ventes.";

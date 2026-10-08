@@ -30,3 +30,9 @@ Source : ADEME, jeu « DPE logements existants (depuis juillet 2021) », licence
 - **Rapprochement avec une vente** : d'abord par numéro de lot commun avec la vente DVF ; sinon même bâtiment et même entrée, DPE établi de 2 ans avant à 1 mois après la vente, surface à moins de max(3 m², 8 %), même niveau quand il est connu (bât. A et C). Étiquettes divergentes entre candidats : vente « ambiguë », non utilisée.
 - **Publié** : effectifs d'étiquettes par bâtiment et prix au m² par classe (A–C, D, E, F–G), ventes atypiques exclues. Aucun chiffre pour moins de 5 logements ou ventes (`MIN_GROUPE`). Jamais de DPE ni de vente individuels.
 - **Privé** : `uv run peupleraie rapprochement` écrit `prive/rapprochement.csv` (vente par vente, avec le DPE retenu et les candidats). Ce dossier est ignoré par git ; ne pas le publier.
+
+### Le prix dépend-il de l'étiquette ?
+
+- **Écart au prix typique** : pour chaque vente rapprochée d'un DPE, on compare son prix au m² à la médiane des ventes non atypiques du même bâtiment la même année (au moins 3 ventes). Cela retire l'effet du bâtiment et de l'année.
+- **Lien** : régression de l'écart (en logarithme) sur le rang de l'étiquette (A–C = 0, D = 1, E = 2, F–G = 3) et sur la surface relative au bâtiment. L'intervalle de confiance à 95 % vient d'un bootstrap (2 000 tirages, graine fixe). Il faut au moins 20 ventes et deux classes de 5 ventes ; sinon la page le dit (« trop peu de ventes »).
+- **Verdict affiché** : « aucun lien démontrable » quand l'intervalle contient 0, « moins cher » ou « plus cher » sinon. C'est une corrélation, jamais une preuve de cause.
