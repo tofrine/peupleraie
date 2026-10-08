@@ -383,7 +383,8 @@ function chips(el, items, set, label) {
     set.has(v) ? set.delete(v) : set.add(v); b.setAttribute("aria-pressed", set.has(v)); update(); };
 }
 chips(document.getElementById("years"), YEARS, st.years, y => y + (DATA.coverage[y] < 50 ? " (incomplet)" : ""));
-chips(document.getElementById("rooms"), [1, 2, 3, 4, 5], st.rooms, r => r === 5 ? "5 et +" : r);
+const ROOMS = [1, 2, 3, 4, 5].filter(r => DATA.sales.some(s => room(s.p) === r) || DATA.refsales.some(x => room(x[2]) === r));
+chips(document.getElementById("rooms"), ROOMS, st.rooms, r => r === 5 ? "F5 et +" : "F" + r);
 const gb = document.getElementById("groupBy");
 const markGroup = () => gb.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c.dataset.v === st.groupBy));
 gb.onclick = e => { const b = e.target.closest(".chip"); if (!b) return; st.groupBy = b.dataset.v; markGroup(); update(); }; markGroup();
