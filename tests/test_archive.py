@@ -41,3 +41,17 @@ def test_rien_a_faire_si_identique(tmp_path):
     data, arc = tmp_path / "data", tmp_path / "arc"
     ecrire(arc, 2023, 10), ecrire(data, 2023, 10)
     assert fusionner(data, arc) == {"archivees": [], "restaurees": [], "gardees": []}
+
+
+def test_synchroniser_fichier_unique(tmp_path):
+    from peupleraie.archive import synchroniser
+
+    src, arc = tmp_path / "s" / "dpe.csv", tmp_path / "a" / "dpe" / "dpe.csv"
+    assert synchroniser(src, arc) == "absente"
+    ecrire(src.parent, "dpe", 10)
+    assert synchroniser(src, arc) == "archivee" and arc.exists()
+    assert synchroniser(src, arc) == "inchangee"
+    src.unlink()
+    assert synchroniser(src, arc) == "restauree" and src.exists()  # source en panne : on repart de l'archive
+    ecrire(src.parent, "dpe", 3, "tronque")
+    assert synchroniser(src, arc) == "gardee" and "tronque" not in src.read_text()

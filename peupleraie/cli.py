@@ -45,10 +45,13 @@ def main(argv: list[str] | None = None) -> int:
         if a.archive.exists():
             b = coffre.fusionner(a.data, coffre_dvf)
             print(f"Archive : {b['archivees']} enregistrées, {b['restaurees']} restaurées, {b['gardees']} conservées")
+        fichier_dpe = a.data / "dpe" / "dpe.csv"
         try:  # les DPE sont un complément : leur échec ne doit pas bloquer la publication
-            print("DPE téléchargés :", dpe.telecharger(a.data / "dpe" / "dpe.csv"))
+            print("DPE téléchargés :", dpe.telecharger(fichier_dpe))
         except Exception as erreur:  # noqa: BLE001
-            print(f"::warning::DPE indisponibles, onglet Énergie omis ({erreur})")
+            print(f"::warning::DPE indisponibles ({erreur})")
+        if a.archive.exists():
+            print("Archive DPE :", coffre.synchroniser(fichier_dpe, a.archive / "dpe" / "dpe.csv"))
     if a.commande in ("build", "all"):
         donnees = construire(sorted(a.data.glob("*.csv")), a.data / "dpe" / "dpe.csv")
         a.json.write_text(json.dumps(donnees, ensure_ascii=False, separators=(",", ":")))

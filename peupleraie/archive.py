@@ -16,19 +16,33 @@ def lignes(chemin: Path) -> int:
         return sum(1 for _ in f)
 
 
+def synchroniser(src: Path, arc: Path) -> str:
+    """Synchronise un fichier source et sa copie archivée.
+
+    « archivee » (source plus récente copiée dans l'archive), « inchangee », « restauree » (source absente : copie
+    restaurée), « gardee » (source tronquée : l'archive prévaut), « absente » (ni l'un ni l'autre).
+    """
+    if src.exists() and (not arc.exists() or lignes(src) >= SEUIL_TRONCATURE * lignes(arc)):
+        if arc.exists() and src.read_bytes() == arc.read_bytes():
+            return "inchangee"
+        arc.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(src, arc)
+        return "archivee"
+    if arc.exists():
+        existait = src.exists()
+        src.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(arc, src)
+        return "gardee" if existait else "restauree"
+    return "absente"
+
+
 def fusionner(data: Path, archive: Path) -> dict[str, list[int]]:
     """Synchronise `data/{année}.csv` (source) et `archive/{année}.csv`. Retourne ce qui a été fait, par année."""
     archive.mkdir(parents=True, exist_ok=True)
     bilan: dict[str, list[int]] = {"archivees": [], "restaurees": [], "gardees": []}
-    sources = {int(c.stem): c for c in data.glob("[0-9][0-9][0-9][0-9].csv")}
-    archives = {int(c.stem): c for c in archive.glob("[0-9][0-9][0-9][0-9].csv")}
-    for annee in sorted(sources.keys() | archives.keys()):
-        src, arc = sources.get(annee), archives.get(annee)
-        if src and (arc is None or lignes(src) >= SEUIL_TRONCATURE * lignes(arc)):
-            if arc is None or src.read_bytes() != arc.read_bytes():
-                shutil.copyfile(src, archive / f"{annee}.csv")
-                bilan["archivees"].append(annee)
-        elif arc:  # année absente de la source, ou source tronquée : on garde l'archive
-            shutil.copyfile(arc, data / f"{annee}.csv")
-            bilan["restaurees" if src is None else "gardees"].append(annee)
+    annees = {int(c.stem) for d in (data, archive) for c in d.glob("[0-9][0-9][0-9][0-9].csv")}
+    for annee in sorted(annees):
+        etat = synchroniser(data / f"{annee}.csv", archive / f"{annee}.csv")
+        if etat != "inchangee":
+            bilan[{"archivee": "archivees", "restauree": "restaurees", "gardee": "gardees"}[etat]].append(annee)
     return bilan
