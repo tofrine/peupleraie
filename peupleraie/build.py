@@ -117,7 +117,11 @@ def construire(chemins: Iterable[Path], dpe: Path | None = None) -> dict[str, An
         "coverage": {int(k): int(v) for k, v in couverture.items()},
     }
     if dpe is not None and dpe.exists():
-        donnees["dpe"] = _energie(p.assign(aty=[v["aty"] for v in ventes]), dpe)
+        try:  # complément : une erreur ne doit pas empêcher la publication des ventes
+            donnees["dpe"] = _energie(p.assign(aty=[v["aty"] for v in ventes]), dpe)
+        except Exception as erreur:  # noqa: BLE001
+            texte = f"{type(erreur).__name__}: {erreur}".replace("\n", " ")[:300]
+            print(f"::warning::DPE ignorés, onglet Énergie omis ({texte})")
     return donnees
 
 
