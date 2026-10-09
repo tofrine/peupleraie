@@ -165,7 +165,7 @@ document.querySelectorAll(".refchip").forEach(
 );
 
 // --- onglets
-const SANS_FILTRES = ["estimer", "energie"]; // onglets indépendants des filtres du haut
+const SANS_FILTRES = ["energie"]; // onglets indépendants du plan et des filtres du haut
 const TABS = ["estimer", "compare", "trend", "gal", "fresnes", "sales"];
 function showTab(t) {
   if (!TABS.includes(t)) t = "estimer";
