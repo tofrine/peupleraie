@@ -942,6 +942,16 @@ footer {
 .estim-surf input {
   width: 6em;
 }
+.estim-tol {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+.estim-tol input {
+  width: 9em;
+  accent-color: var(--accent);
+}
 #estBat {
   width: 100%;
   max-width: 100%;

@@ -42,4 +42,4 @@ Source : ADEME, jeu « DPE logements existants (depuis juillet 2021) », licence
 
 ## Onglet « Estimer »
 
-Calculé dans le navigateur, sans donnée supplémentaire : ventes de la résidence à ±15 % de la surface saisie, hors ventes atypiques, sur les trois dernières années complètes. La fourchette va du premier au troisième quartile du prix au m², multiplié par la surface et arrondi au millier d'euros. Sous 4 ventes dans le bâtiment choisi, le calcul s'étend à toute la résidence ; sous 4 ventes au total, aucun chiffre n'est donné.
+Calculé dans le navigateur, sans donnée supplémentaire : ventes de la résidence dont la surface est proche de celle saisie (tolérance réglable par un curseur, ±5 % au départ), hors ventes atypiques, sur les trois dernières années complètes. La fourchette va du premier au troisième quartile du prix au m², multiplié par la surface et arrondi au millier d'euros. Sous 4 ventes dans le bâtiment choisi, le calcul s'étend à toute la résidence ; sous 4 ventes au total, aucun chiffre n'est donné.

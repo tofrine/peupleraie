@@ -1176,7 +1176,7 @@ function renderSettingsSum() {
 }
 
 // --- estimer : fourchette de prix à partir des ventes comparables
-const EST = { annees: 3, ecart: 0.15, minVentes: 4 };
+const EST = { annees: 3, minVentes: 4 };
 const quantile = (tri, q) => {
   const i = (tri.length - 1) * q,
     k = Math.floor(i);
@@ -1184,20 +1184,20 @@ const quantile = (tri, q) => {
 };
 const aMille = (n) => Math.round(n / 1000) * 1000;
 
-// ventes comparables : même surface à ±15 %, hors ventes atypiques, sur les dernières années complètes
-function comparables(bat, surface) {
+// ventes comparables : surface proche (tolérance réglable), hors ventes atypiques, sur les dernières années complètes
+function comparables(bat, surface, ecart) {
   const complete = YEARS.filter((y) => DATA.coverage[y] >= 50),
     annees = complete.slice(-EST.annees);
   const proches = DATA.sales.filter(
-    (s) => B[s.g].peupleraie && !s.aty && annees.includes(s.y) && Math.abs(s.s - surface) <= surface * EST.ecart,
+    (s) => B[s.g].peupleraie && !s.aty && annees.includes(s.y) && Math.abs(s.s - surface) <= surface * ecart,
   );
   const duBat = bat ? proches.filter((s) => s.g === bat) : proches;
   const elargi = duBat.length < EST.minVentes;
   return { ventes: elargi ? proches : duBat, elargi, annees };
 }
 
-function estimer(bat, surface) {
-  const { ventes, elargi, annees } = comparables(bat, surface);
+function estimer(bat, surface, ecart) {
+  const { ventes, elargi, annees } = comparables(bat, surface, ecart);
   if (ventes.length < EST.minVentes) return { n: ventes.length, ventes, elargi, annees };
   const tri = ventes.map((s) => s.m2).sort((a, b) => a - b),
     [q1, med, q3] = [0.25, 0.5, 0.75].map((q) => quantile(tri, q));
@@ -1225,21 +1225,25 @@ const estSort = { key: "d", dir: -1 };
 function renderEstimer() {
   const bat = document.getElementById("estBat").value,
     surface = Number(document.getElementById("estSurf").value),
+    tol = Number(document.getElementById("estTol").value),
+    ecart = tol / 100,
     verdict = document.getElementById("estVerdict"),
     table = document.getElementById("estTable"),
     note = document.getElementById("estNote");
   table.innerHTML = "";
   verdict.classList.remove("found");
+  document.getElementById("estTolVal").textContent =
+    surface >= 9 ? `±${tol} % (${fmt(surface * (1 - ecart))} à ${fmt(surface * (1 + ecart))} m²)` : `±${tol} %`;
   if (!(surface >= 9)) {
     verdict.textContent = "Choisissez un bâtiment et indiquez une surface en m² pour voir la fourchette.";
     note.textContent = "";
     return;
   }
-  const r = estimer(bat, surface),
+  const r = estimer(bat, surface, ecart),
     de = r.annees[0],
     a = r.annees[r.annees.length - 1];
   if (r.n < EST.minVentes) {
-    verdict.textContent = `Trop peu de ventes comparables (${r.n}) pour donner un repère fiable à cette surface.`;
+    verdict.textContent = `Trop peu de ventes comparables (${r.n}) à ±${tol} % pour donner un repère fiable. Élargissez la tolérance avec le curseur, ou c'est que cette surface se vend peu.`;
     note.textContent = "";
     return;
   }
@@ -1249,7 +1253,7 @@ function renderEstimer() {
     ` (médiane ${eur(aMille(r.med * surface))}, soit ${fmt(r.med)} €/m²).` +
     (r.elargi ? " Comme ce bâtiment a trop peu de ventes, c'est calculé sur toute la résidence." : "");
   note.textContent =
-    `Calculé sur ${r.n} ventes de ${de} à ${a}, surface à ±15 %, ventes atypiques écartées. La fourchette va du quart bas au quart haut des prix au m². ` +
+    `Calculé sur ${r.n} ventes de ${de} à ${a}, surface à ±${tol} %, ventes atypiques écartées. La fourchette va du quart bas au quart haut des prix au m². ` +
     "C'est un repère, pas une estimation officielle : l'étage, l'état, les travaux et l'exposition ne sont pas pris en compte.";
   table.innerHTML =
     enteteTriable(EST_COLS, estSort) +
@@ -1272,7 +1276,7 @@ function renderEstimer() {
       .filter((b) => b.peupleraie)
       .map((b) => `<option value="${b.id}">${esc(b.label)}</option>`)
       .join("");
-  sel.onchange = document.getElementById("estSurf").oninput = renderEstimer;
+  sel.onchange = document.getElementById("estSurf").oninput = document.getElementById("estTol").oninput = renderEstimer;
   renderEstimer();
 }
 
