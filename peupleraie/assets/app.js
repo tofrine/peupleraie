@@ -179,13 +179,17 @@ function showTab(t) {
 }
 document.getElementById("tabs").onclick = (e) => {
   const b = e.target.closest(".tab");
-  if (b) showTab(b.dataset.tab);
+  if (!b) return;
+  showTab(b.dataset.tab);
+  b.scrollIntoView({ inline: "center", block: "nearest" });
+  update(); // les graphiques prennent la largeur de l'onglet devenu visible
 };
 document.getElementById("tabs").onkeydown = (e) => {
   if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
   const cur = TABS.findIndex((k) => document.getElementById("tab-" + k).hidden === false),
     n = (cur + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length;
   showTab(TABS[n]);
+  update();
   document.querySelector(`#tabs [data-tab="${TABS[n]}"]`).focus();
 };
 let startTab = "compare";
@@ -412,7 +416,15 @@ function niceTicks(lo, hi, n = 6) {
   return t;
 }
 
+// --- largeur des graphiques : celle du conteneur (l'onglet doit être visible), de 300 à 900 px
+const chartWidth = (el) => Math.max(300, Math.min(900, el.clientWidth || 900));
+
 // --- comparaison vente par vente
+const stripLabel = (r, compact) => {
+  const nom = compact && st.groupBy === "g" && SHORTN[r.k] ? SHORTN[r.k] : r.label,
+    max = compact ? 15 : 34;
+  return esc(nom.length > max ? nom.slice(0, max - 1) + "…" : nom);
+};
 function renderStrip(G) {
   const el = document.getElementById("strip"),
     rows = [...G.list].sort((a, b) => b.med - a.med);
@@ -432,16 +444,17 @@ function renderStrip(G) {
   const pad = (hi - lo) * 0.06 || 200;
   lo -= pad;
   hi += pad;
-  const W = 900,
-    L0 = 230,
-    R0 = 96,
-    rh = 36,
+  const W = chartWidth(el),
+    compact = W < 560,
+    L0 = compact ? 120 : 230,
+    R0 = compact ? 74 : 96,
+    rh = compact ? 34 : 36,
     n = rows.length + refs.length,
     H = 40 + n * rh;
   const x = (v) => L0 + ((v - lo) / (hi - lo)) * (W - L0 - R0);
   let s =
     `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Prix au m² par vente"><g class="axis">` +
-    niceTicks(lo, hi)
+    niceTicks(lo, hi, compact ? 3 : 6)
       .map(
         (t) =>
           `<line x1="${x(t)}" x2="${x(t)}" y1="18" y2="${H - 22}` +
@@ -458,9 +471,7 @@ function renderStrip(G) {
       v = r.ss.map((q) => q.m2),
       mn = Math.min(...v),
       mx = Math.max(...v);
-    s +=
-      `<text x="${L0 - 12}" y="${y + 4}" text-anchor="end">` +
-      `${esc(r.label.length > 34 ? r.label.slice(0, 33) + "…" : r.label)}</text>`;
+    s += `<text x="${L0 - 12}" y="${y + 4}" text-anchor="end">` + `${stripLabel(r, compact)}</text>`;
     s +=
       `<line x1="${x(mn)}" x2="${x(mx)}" y1="${y}" y2="${y}` +
       `" stroke="var(--line)" stroke-width="2" stroke-linecap="round"/>`;
@@ -487,7 +498,7 @@ function renderStrip(G) {
       x2 = x(Math.min(hi, q(0.75)));
     s +=
       `<text x="${L0 - 12}" y="${y + 4}" text-anchor="end" style="font-style:italic">` +
-      `${r.name} (mêmes filtres)</text>`;
+      `${compact ? r.name.replace("appartements", "apparts.") : r.name + " (mêmes filtres)"}</text>`;
     s +=
       `<rect class="refbar" data-tip="${r.name}, mêmes filtres : la moitié des ventes entre ` +
       `${fmt(q(0.25))} et ${fmt(q(0.75))} €/m²" x="${Math.min(x1, x2)}" y="${y - 5}" width="` +
@@ -667,10 +678,11 @@ function lineChart(el, legendEl, ys, series, labelAll, noLabels) {
   const pad = (hi - lo) * 0.15 || 300;
   lo = Math.max(0, lo - pad);
   hi += pad;
-  const W = 900,
-    H = 300,
-    L0 = 56,
-    R0 = 24,
+  const W = chartWidth(el),
+    compact = W < 560,
+    H = compact ? 260 : 300,
+    L0 = compact ? 46 : 56,
+    R0 = compact ? 16 : 24,
     T0 = 22,
     B0 = 32;
   const x = (y) =>
@@ -1043,6 +1055,16 @@ document.getElementById("csvCopy").onclick = () => {
     .catch(() => csvMsg("La copie automatique est refusée par ce navigateur."));
 };
 
+// Tableaux en fiches sur téléphone : chaque cellule connaît le titre de sa colonne
+function labelCells() {
+  document.querySelectorAll("table").forEach((table) => {
+    const titres = [...table.querySelectorAll("thead th")].map((th) => th.textContent.trim());
+    table.querySelectorAll("tbody tr").forEach((tr) => {
+      [...tr.children].forEach((td, i) => (td.dataset.label = titres[i] || ""));
+    });
+  });
+}
+
 function update() {
   renderList();
   const G = groups();
@@ -1057,6 +1079,7 @@ function update() {
   renderSales();
   save();
   document.getElementById("tabSalesN").textContent = G.sales.length;
+  labelCells();
   document.querySelectorAll(".refchip").forEach((b) => b.setAttribute("aria-pressed", !!refOn[b.dataset.ref]));
   document.querySelectorAll("#spresets .chip").forEach((b) => {
     const [a, z] = b.dataset.r.split("-").map(Number);
@@ -1088,5 +1111,13 @@ function renderSettingsSum() {
 
 renderEnergie();
 update();
+let largeurPrecedente = innerWidth,
+  minuteur;
+addEventListener("resize", () => {
+  if (innerWidth === largeurPrecedente) return; // la barre d'adresse du mobile ne change que la hauteur
+  largeurPrecedente = innerWidth;
+  clearTimeout(minuteur);
+  minuteur = setTimeout(update, 150);
+});
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update);
 new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });

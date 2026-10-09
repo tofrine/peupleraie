@@ -407,6 +407,8 @@ h2 {
   color: var(--ink-3);
 }
 select.pick {
+  max-width: 100%;
+  box-sizing: border-box;
   font: inherit;
   font-size: 14px;
   width: auto;
@@ -641,7 +643,6 @@ input[type="number"] {
 .chart svg {
   display: block;
   width: 100%;
-  min-width: 620px;
   height: auto;
 }
 .chart text {
@@ -839,5 +840,79 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
+  }
+}
+
+/* Téléphone : onglets resserrés, tableaux en fiches, tableaux d'années à première colonne fixe */
+@media (max-width: 600px) {
+  .tab {
+    padding: 10px 9px 9px;
+    font-size: 14px;
+  }
+  .tabs {
+    -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
+    mask-image: linear-gradient(90deg, #000 88%, transparent);
+    padding-right: 20px;
+  }
+  .tablewrap td[data-label="Galerie"] {
+    grid-column: span 2;
+  }
+  .tag {
+    white-space: nowrap;
+  }
+  .tablewrap table:not(#trendTable):not(#fresnesTable) {
+    display: block;
+  }
+  .tablewrap table:not(#trendTable):not(#fresnesTable) thead {
+    display: none;
+  }
+  .tablewrap table:not(#trendTable):not(#fresnesTable) tbody {
+    display: grid;
+    gap: 10px;
+  }
+  .tablewrap table:not(#trendTable):not(#fresnesTable) tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .tablewrap table:not(#trendTable):not(#fresnesTable) tr.total {
+    background: var(--accent-soft);
+  }
+  .tablewrap table:not(#trendTable):not(#fresnesTable) td {
+    padding: 0;
+    border: 0;
+    text-align: left;
+    white-space: normal;
+    min-width: 0;
+  }
+  .tablewrap table:not(#trendTable):not(#fresnesTable) td:empty {
+    display: none;
+  }
+  .tablewrap table:not(#trendTable):not(#fresnesTable) td::before {
+    content: attr(data-label);
+    display: block;
+    font: 500 10px var(--f-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .tablewrap table:not(#trendTable):not(#fresnesTable) td:first-child {
+    grid-column: 1 / -1;
+    font-weight: 600;
+  }
+  .tablewrap table:not(#trendTable):not(#fresnesTable) td:first-child::before {
+    display: none;
+  }
+  #trendTable th:first-child,
+  #trendTable td:first-child,
+  #fresnesTable th:first-child,
+  #fresnesTable td:first-child {
+    position: sticky;
+    left: 0;
+    min-width: 0;
+    background: var(--panel);
   }
 }
