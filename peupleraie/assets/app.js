@@ -137,8 +137,8 @@ noAty.onchange = () => {
   update();
 };
 const REFS = [
-  { t: 0, id: "refA", name: "Fresnes appartements", color: "var(--ref)" },
-  { t: 1, id: "refM", name: "Fresnes maisons", color: "var(--ref2)" },
+  { t: 0, id: "refA", name: "Fresnes appartements", libelle: "Appartements", classe: "ref", color: "var(--ref)" },
+  { t: 1, id: "refM", name: "Fresnes maisons", libelle: "Maisons", classe: "ref2", color: "var(--ref2)" },
 ];
 const refOn = { refA: true, refM: false };
 try {
@@ -146,6 +146,13 @@ try {
   if (r) Object.assign(refOn, r);
 } catch (e) {}
 const activeRefs = () => REFS.filter((r) => refOn[r.id]);
+// Puces « Repères Fresnes » : un seul gabarit pour les onglets Comparer et Évolution
+const refChip = (r) =>
+  `<button class="chip ${r.classe} refchip" type="button" data-ref="${r.id}" aria-pressed="${!!refOn[r.id]}">` +
+  `${r.libelle}</button>`;
+document.querySelectorAll(".reperes").forEach((el) => {
+  el.innerHTML = `<span class="label">Repères Fresnes</span><div class="chips">${REFS.map(refChip).join("")}</div>`;
+});
 document.querySelectorAll(".refchip").forEach(
   (b) =>
     (b.onclick = () => {

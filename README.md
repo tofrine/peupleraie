@@ -26,6 +26,7 @@ Tests et style :
 ```
 > uv run pytest
 > uv run ruff check
+> npx prettier --write peupleraie/assets/app.js peupleraie/assets/style.css   # mise en forme du JS et du CSS
 ```
 
 ## Publication

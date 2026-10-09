@@ -86,13 +86,7 @@
           <button class="chip" type="button" data-v="md">Montant / descendant (A et C)</button>
         </div>
       </div>
-      <div class="group">
-        <span class="label">Repères Fresnes</span>
-        <div class="chips">
-          <button class="chip ref refchip" type="button" data-ref="refA" aria-pressed="true">Appartements</button>
-          <button class="chip ref2 refchip" type="button" data-ref="refM" aria-pressed="false">Maisons</button>
-        </div>
-      </div>
+      <div class="group reperes"></div>
       <div class="hint">Un point = une vente. Trait vertical : médiane. Ligne grise : du minimum au maximum.</div>
       <div class="chart" id="strip"></div>
     </div>
@@ -105,13 +99,7 @@
   <section class="tabpanel" id="tab-trend" role="tabpanel" hidden>
     <div class="block">
       <div class="panel-head"><h2>Évolution du prix médian au m²</h2><span class="hint">Point creux : moins de 3 ventes cette année-là</span></div>
-      <div class="group">
-        <span class="label">Repères Fresnes</span>
-        <div class="chips">
-          <button class="chip ref refchip" type="button" data-ref="refA" aria-pressed="true">Appartements</button>
-          <button class="chip ref2 refchip" type="button" data-ref="refM" aria-pressed="false">Maisons</button>
-        </div>
-      </div>
+      <div class="group reperes"></div>
       <div class="group">
         <label class="label" for="trendMode">Une courbe par</label>
         <select id="trendMode" class="pick">
