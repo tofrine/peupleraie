@@ -166,14 +166,19 @@ document.querySelectorAll(".refchip").forEach(
 
 // --- onglets
 const SANS_FILTRES = ["energie"]; // onglets indépendants du plan et des filtres du haut
-const TABS = ["estimer", "compare", "trend", "gal", "fresnes", "sales"];
+const TABS = ["compare", "trend", "gal", "fresnes", "sales", "estimer"];
 function showTab(t) {
-  if (!TABS.includes(t)) t = "estimer";
+  if (!TABS.includes(t)) t = "compare";
   TABS.forEach((k) => {
     document.getElementById("tab-" + k).hidden = k !== t;
   });
   document.querySelectorAll("#tabs .tab").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === t));
-  document.querySelector(".bench").hidden = document.getElementById("summary").hidden = SANS_FILTRES.includes(t);
+  const bench = document.querySelector(".bench"),
+    planSeul = t === "estimer"; // le plan reste visible ; réglages et chiffres clés n'ont pas d'effet ici
+  bench.hidden = SANS_FILTRES.includes(t);
+  bench.classList.toggle("plan-seul", planSeul);
+  document.querySelector(".bench > [aria-label='Réglages']").hidden = planSeul;
+  document.getElementById("summary").hidden = SANS_FILTRES.includes(t) || planSeul;
   try {
     sessionStorage.setItem("peupleraie-tab", t);
   } catch (e) {}
@@ -184,6 +189,7 @@ document.getElementById("tabs").onclick = (e) => {
   showTab(b.dataset.tab);
   b.scrollIntoView({ inline: "center", block: "nearest" });
   update(); // les graphiques prennent la largeur de l'onglet devenu visible
+  map.invalidateSize();
 };
 document.getElementById("tabs").onkeydown = (e) => {
   if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
@@ -191,11 +197,12 @@ document.getElementById("tabs").onkeydown = (e) => {
     n = (cur + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length;
   showTab(TABS[n]);
   update();
+  map.invalidateSize();
   document.querySelector(`#tabs [data-tab="${TABS[n]}"]`).focus();
 };
-let startTab = "estimer";
+let startTab = "compare";
 try {
-  startTab = sessionStorage.getItem("peupleraie-tab") || "estimer";
+  startTab = sessionStorage.getItem("peupleraie-tab") || "compare";
 } catch (e) {}
 showTab(startTab);
 
@@ -541,6 +548,60 @@ const COLS = [
   ["max", "Max €/m²"],
   ["prix", "Prix méd."],
 ];
+// --- tableaux triables : un clic sur un titre trie la colonne, un second clic inverse l'ordre
+const TEXTE = new Set(["label", "g", "e", "niv"]); // colonnes qui se trient d'abord de A à Z
+function enteteTriable(colonnes, tri) {
+  const cols = colonnes
+    .map(
+      ([k, l]) =>
+        `<th data-k="${k}"${k === tri.key ? ` aria-sort="${tri.dir > 0 ? "ascending" : "descending"}"` : ""}>${l}</th>`,
+    )
+    .join("");
+  return `<thead><tr>${cols}</tr></thead>`;
+}
+function trier(lignes, tri, valeur = (l, k) => l[k]) {
+  const vide = (v) => v == null || v === "";
+  return [...lignes].sort((a, b) => {
+    const [x, y] = [valeur(a, tri.key), valeur(b, tri.key)];
+    if (vide(x) || vide(y)) return vide(x) - vide(y); // les cases vides vont toujours à la fin
+    const c = typeof x === "string" ? x.localeCompare(y, "fr", { numeric: true }) : x - y;
+    return c * tri.dir;
+  });
+}
+function brancherTri(table, tri, redessiner) {
+  const changer = (k) => {
+    Object.assign(tri, { key: k, dir: tri.key === k ? -tri.dir : TEXTE.has(k) ? 1 : -1 });
+    redessiner();
+  };
+  const titres = [...table.querySelectorAll("th[data-k]")];
+  titres.forEach((th) => (th.onclick = () => changer(th.dataset.k)));
+  // sur téléphone les tableaux deviennent des fiches sans titres : un menu prend le relais
+  const hote = table.closest(".tablewrap"),
+    ancien = hote.previousElementSibling;
+  if (ancien?.classList.contains("tri-mobile")) ancien.remove();
+  if (!titres.length) return;
+  const barre = document.createElement("div");
+  barre.className = "tri-mobile";
+  barre.innerHTML =
+    `<label>Trier par <select class="pick">` +
+    titres
+      .map(
+        (th) =>
+          `<option value="${th.dataset.k}"${th.dataset.k === tri.key ? " selected" : ""}>${th.textContent}</option>`,
+      )
+      .join("") +
+    `</select></label><button class="chip" type="button" aria-label="Inverser l'ordre">${tri.dir > 0 ? "↑" : "↓"}</button>`;
+  barre.querySelector("select").onchange = (e) => {
+    Object.assign(tri, { key: e.target.value, dir: TEXTE.has(e.target.value) ? 1 : -1 });
+    redessiner();
+  };
+  barre.querySelector("button").onclick = () => {
+    tri.dir = -tri.dir;
+    redessiner();
+  };
+  hote.before(barre);
+}
+
 function statsOf(ss) {
   const v = ss.map((s) => s.m2);
   return {
@@ -559,10 +620,7 @@ function renderTable(G) {
     return;
   }
   const rows = G.list.map((r) => ({ label: r.label, ...statsOf(r.ss) }));
-  const { key, dir } = st.sort;
-  rows.sort(
-    (a, b) => (typeof a[key] === "string" ? a[key].localeCompare(b[key], "fr") : (a[key] ?? 0) - (b[key] ?? 0)) * dir,
-  );
+  const sorted = trier(rows, st.sort);
   const cell = (r, k) =>
     k === "label"
       ? esc(r.label)
@@ -573,11 +631,8 @@ function renderTable(G) {
           : k === "prix"
             ? eur(r.prix)
             : fmt(r[k]);
-  let h =
-    `<thead><tr>` +
-    `${COLS.map(([k, l]) => `<th data-k="${k}" ${k === key ? `aria-sort="${dir > 0 ? "ascending" : "descending"}"` : ""}>${l}</th>`).join("")}` +
-    `</tr></thead><tbody>`;
-  h += rows
+  let h = enteteTriable(COLS, st.sort) + "<tbody>";
+  h += sorted
     .map((r) => `<tr class="${r.n < 3 ? "few" : ""}">${COLS.map(([k]) => `<td>${cell(r, k)}</td>`).join("")}</tr>`)
     .join("");
   if (G.list.length > 1) {
@@ -601,14 +656,7 @@ function renderTable(G) {
     }
   });
   t.innerHTML = h + "</tbody>";
-  t.querySelectorAll("th").forEach(
-    (th) =>
-      (th.onclick = () => {
-        const k = th.dataset.k;
-        st.sort = { key: k, dir: st.sort.key === k ? -st.sort.dir : k === "label" ? 1 : -1 };
-        renderTable(groups());
-      }),
-  );
+  brancherTri(t, st.sort, () => renderTable(groups()));
 }
 
 const lum = (hex) => {
@@ -949,9 +997,21 @@ document.getElementById("salesMore").onclick = () => {
   showAllSales = !showAllSales;
   renderSales();
 };
+const SALES_COLS = [
+  ["g", "Bâtiment"],
+  ["e", "Entrée"],
+  ["niv", "Galerie"],
+  ["d", "Date"],
+  ["s", "Surface"],
+  ["p", "Pièces"],
+  ["v", "Prix"],
+  ["m2", "€/m²"],
+  ["dep", "Dép."],
+];
+const salesSort = { key: "d", dir: -1 };
 function renderSales() {
-  const ss = DATA.sales
-    .filter(
+  const ss = trier(
+    DATA.sales.filter(
       (s) =>
         st.sel.has(s.g) &&
         st.years.has(s.y) &&
@@ -959,16 +1019,17 @@ function renderSales() {
         s.s <= st.smax &&
         st.rooms.has(room(s.p)) &&
         (!s.niv || st.nivs.has(s.niv)),
-    )
-    .sort((a, b) => b.d.localeCompare(a.d));
+    ),
+    salesSort,
+  );
   lastSales = ss;
   const shown = ss.filter((s) => !(st.noAty && s.aty)).length;
   document.getElementById("salesCount").textContent =
-    `${shown} vente${shown > 1 ? "s" : ""}, les plus récentes en premier` +
+    `${shown} vente${shown > 1 ? "s" : ""} · cliquez un titre pour trier` +
     `${st.noAty && ss.length > shown ? " ; barrées : atypiques, écartées des calculs" : ""}`;
-  document.getElementById("sales").innerHTML = ss.length
-    ? `<thead><tr><th>Bâtiment</th><th>Entrée</th><th>Galerie</th><th>Date</th>` +
-      `<th>Surface</th><th>Pièces</th><th>Prix</th><th>€/m²</th><th>Dép.</th></tr></thead>` +
+  const table = document.getElementById("sales");
+  table.innerHTML = ss.length
+    ? enteteTriable(SALES_COLS, salesSort) +
       `<tbody>` +
       (showAllSales ? ss : ss.slice(0, 30))
         .map(
@@ -983,6 +1044,10 @@ function renderSales() {
         .join("") +
       "</tbody>"
     : `<tr><td class="empty">Aucune vente avec ces réglages.</td></tr>`;
+  brancherTri(table, salesSort, () => {
+    renderSales();
+    labelCells();
+  });
   const more = document.getElementById("salesMore");
   more.hidden = ss.length <= 30;
   more.textContent = showAllSales ? "Réduire la liste" : `Afficher les ${ss.length} ventes`;
@@ -1149,6 +1214,14 @@ function estimer(bat, surface) {
   };
 }
 
+const EST_COLS = [
+  ["d", "Date"],
+  ["g", "Bâtiment"],
+  ["s", "Surface"],
+  ["v", "Prix"],
+  ["m2", "€/m²"],
+];
+const estSort = { key: "d", dir: -1 };
 function renderEstimer() {
   const bat = document.getElementById("estBat").value,
     surface = Number(document.getElementById("estSurf").value),
@@ -1178,10 +1251,10 @@ function renderEstimer() {
   note.textContent =
     `Calculé sur ${r.n} ventes de ${de} à ${a}, surface à ±15 %, ventes atypiques écartées. La fourchette va du quart bas au quart haut des prix au m². ` +
     "C'est un repère, pas une estimation officielle : l'étage, l'état, les travaux et l'exposition ne sont pas pris en compte.";
-  const lignes = [...r.ventes].sort((x, y) => (x.d < y.d ? 1 : -1));
   table.innerHTML =
-    "<thead><tr><th>Date</th><th>Bâtiment</th><th>Surface</th><th>Prix</th><th>€/m²</th></tr></thead><tbody>" +
-    lignes
+    enteteTriable(EST_COLS, estSort) +
+    "<tbody>" +
+    trier(r.ventes, estSort)
       .map(
         (s) =>
           `<tr><td>${dateFr(s.d)}</td><td>${esc(short(s.g))}</td><td>${fmt(s.s)} m²</td><td>${eur(s.v)}</td><td>${fmt(s.m2)}</td></tr>`,
@@ -1189,6 +1262,7 @@ function renderEstimer() {
       .join("") +
     "</tbody>";
   labelCells();
+  brancherTri(table, estSort, renderEstimer);
 }
 {
   const sel = document.getElementById("estBat");

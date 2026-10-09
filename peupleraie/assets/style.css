@@ -704,17 +704,16 @@ th {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-3);
-  cursor: pointer;
   user-select: none;
+}
+th[data-k] {
+  cursor: pointer;
 }
 th[aria-sort="ascending"]::after {
   content: " ↑";
 }
 th[aria-sort="descending"]::after {
   content: " ↓";
-}
-#sales th {
-  cursor: default;
 }
 tr.total td {
   font-weight: 700;
@@ -918,6 +917,9 @@ footer {
 }
 
 /* Estimer */
+.bench.plan-seul {
+  grid-template-columns: minmax(0, 1fr);
+}
 #tab-estimer .block {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -946,4 +948,18 @@ footer {
 }
 #estVerdict {
   font-size: 17px;
+}
+
+.tri-mobile {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+@media (max-width: 600px) {
+  .tri-mobile {
+    display: flex;
+  }
 }

@@ -17,8 +17,8 @@ def test_page_complete_et_adaptee_au_telephone(tmp_path):
     assert 'name="viewport" content="width=device-width, initial-scale=1"' in page  # sans lui, le téléphone dézoome
 
 
-def test_onglet_estimer_en_premier(tmp_path):
+def test_onglet_estimer_en_dernier(tmp_path):
     page = assembler({"buildings": [], "coverage": {}}, tmp_path).read_text(encoding="utf-8")
-    assert page.index('data-tab="estimer"') < page.index('data-tab="compare"')
+    assert page.index('data-tab="compare"') < page.index('data-tab="estimer"')
     for repere in ('id="estBat"', 'id="estSurf"', "function estimer"):
         assert repere in page
