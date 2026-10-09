@@ -937,7 +937,10 @@ function renderEnergie() {
       .join("") +
     `</tbody>`;
   const L = D.lien,
-    pc = (v) => (v > 0 ? "+" : "") + String(v).replace(".", ",") + " %",
+    pc = (v) => {
+      const r = Math.round(v * 10) / 10; // toujours une décimale : « 0,0 % » plutôt que « 0 % »
+      return (r > 0 ? "+" : r < 0 ? "−" : "") + Math.abs(r).toFixed(1).replace(".", ",") + " %";
+    },
     V = document.getElementById("energieVerdict");
   const reserve = " L'intervalle est large parce que les ventes rapprochées d'un DPE sont peu nombreuses.";
   const msg = {
