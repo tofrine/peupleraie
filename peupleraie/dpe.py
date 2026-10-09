@@ -301,21 +301,7 @@ def agreger(dpe: pd.DataFrame, ventes: pd.DataFrame, appariement: pd.DataFrame) 
             prix[b.code] = par_groupe(sous)
 
     e = ecarts(ventes, appariement)
-    par_ecart = {}
-    for nom, liste in GROUPES_ETIQUETTES:
-        x = e[e.classe == RANG[liste[0]]].log_ecart.map(lambda b: (float(np.exp(b)) - 1) * 100)
-        par_ecart[nom] = (
-            {"n": len(x)}
-            if len(x) < MIN_GROUPE
-            else {
-                "n": len(x),
-                "med": round(float(x.median()), 1),
-                "q1": round(float(x.quantile(0.25)), 1),
-                "q3": round(float(x.quantile(0.75)), 1),
-            }
-        )
     return {
-        "ecart": par_ecart,
         "lien": lien(e),
         "maj": dpe.date.max().strftime("%d/%m/%Y"),
         "n_logements": len(parc),

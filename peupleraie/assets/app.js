@@ -949,12 +949,10 @@ function renderEnergie() {
       `DPE avec un prix de comparaison fiable ; il en faudrait au moins 20, réparties sur ` +
       `au moins deux classes d'étiquette.`,
     aucun:
-      `<b>On ne peut pas conclure à un lien entre l'étiquette et le prix.</b> Sur ${L.n}` +
-      ` ventes, l'écart estimé est de ${pc(L.effet)}` +
-      ` par classe d'étiquette, avec un intervalle de confiance à 95 % de ` +
-      `${pc(L.ic && L.ic[0])} à ${pc(L.ic && L.ic[1])}` +
-      ` : il contient 0, donc les données sont compatibles avec <b>aucun effet</b>.` +
-      `${reserve}`,
+      `<b>Rien ne permet de dire que l'étiquette change le prix.</b> Sur ${L.n} ventes rapprochées d'un DPE, ` +
+      `l'écart observé par classe d'étiquette est de ${pc(L.effet)} (entre ${pc(L.ic && L.ic[0])} et ` +
+      `${pc(L.ic && L.ic[1])} à 95 %) : il est trop petit par rapport à la dispersion des prix pour ne pas ` +
+      `venir du hasard.${reserve}`,
     negatif:
       `<b>Les logements moins bien classés se vendent moins cher :</b> environ ` +
       `${pc(L.effet)}` +
@@ -968,17 +966,6 @@ function renderEnergie() {
   }[L.verdict];
   V.innerHTML = msg;
   V.classList.toggle("found", L.verdict === "negatif" || L.verdict === "positif");
-  document.getElementById("energieEcart").innerHTML =
-    `<thead><tr><th>Étiquette</th><th>écart au prix typique</th><th>ventes</th></tr></thead><tbody>` +
-    Object.entries(D.ecart)
-      .map(
-        ([g, s]) =>
-          `<tr><td>${g}</td><td>` +
-          `${s.med != null ? `${pc(s.med)} <small>(${pc(s.q1)} à ${pc(s.q3)})</small>` : "–"}` +
-          `</td><td>${s.n}</td></tr>`,
-      )
-      .join("") +
-    `</tbody>`;
   const m = D.rapprochement;
   document.getElementById("energieMatch").innerHTML =
     `${m.apparie} ventes sur ${m.ventes}` +
