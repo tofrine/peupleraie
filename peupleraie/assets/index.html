@@ -71,7 +71,8 @@
   <section class="kpis" id="summary" aria-label="Chiffres clés"></section>
 
   <div class="tabs" role="tablist" id="tabs">
-    <button class="tab" role="tab" type="button" data-tab="compare" aria-selected="true">Comparer</button>
+    <button class="tab" role="tab" type="button" data-tab="estimer" aria-selected="true">Estimer</button>
+    <button class="tab" role="tab" type="button" data-tab="compare" aria-selected="false">Comparer</button>
     <button class="tab" role="tab" type="button" data-tab="trend" aria-selected="false">Évolution</button>
     <button class="tab" role="tab" type="button" data-tab="gal" aria-selected="false">Galeries</button>
     <button class="tab" role="tab" type="button" data-tab="fresnes" aria-selected="false">Fresnes</button>
@@ -79,7 +80,22 @@
     <button class="tab" role="tab" type="button" data-tab="sales" aria-selected="false">Ventes<span class="n" id="tabSalesN"></span></button>
   </div>
 
-  <section class="tabpanel" id="tab-compare" role="tabpanel">
+  <section class="tabpanel" id="tab-estimer" role="tabpanel">
+    <div class="block">
+      <div class="panel-head"><h2>Combien vaut un appartement comme le mien ?</h2></div>
+      <div class="estim-form">
+        <label for="estBat">Bâtiment</label>
+        <select id="estBat" class="pick"></select>
+        <label for="estSurf">Surface</label>
+        <span class="estim-surf"><input type="number" id="estSurf" min="9" max="300" step="1" inputmode="numeric" placeholder="ex. 62"> m²</span>
+      </div>
+      <div class="verdict" id="estVerdict"></div>
+      <div class="tablewrap"><table id="estTable"></table></div>
+      <div class="hint" id="estNote"></div>
+    </div>
+  </section>
+
+  <section class="tabpanel" id="tab-compare" role="tabpanel" hidden>
     <div class="block">
       <div class="panel-head"><h2>Prix au m², vente par vente</h2></div>
       <div class="group">

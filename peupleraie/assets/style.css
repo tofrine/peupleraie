@@ -916,3 +916,34 @@ footer {
     background: var(--panel);
   }
 }
+
+/* Estimer */
+#tab-estimer .block {
+  grid-template-columns: minmax(0, 1fr);
+}
+.estim-form {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: center;
+  margin: 6px 0 14px;
+  max-width: 460px;
+}
+.estim-form label {
+  color: var(--ink-2);
+}
+.estim-surf {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.estim-surf input {
+  width: 6em;
+}
+#estBat {
+  width: 100%;
+  max-width: 100%;
+}
+#estVerdict {
+  font-size: 17px;
+}

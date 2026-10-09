@@ -39,3 +39,7 @@ Source : ADEME, jeu « DPE logements existants (depuis juillet 2021) », licence
 - **Écart au prix typique** : pour chaque vente rapprochée d'un DPE, on compare son prix au m² à la médiane des ventes non atypiques du même bâtiment la même année (au moins 3 ventes). Cela retire l'effet du bâtiment et de l'année.
 - **Lien** : régression de l'écart (en logarithme) sur le rang de l'étiquette (A–C = 0, D = 1, E = 2, F–G = 3) et sur la surface relative au bâtiment. L'intervalle de confiance à 95 % vient d'un bootstrap (2 000 tirages, graine fixe). Il faut au moins 20 ventes et deux classes de 5 ventes ; sinon la page le dit (« trop peu de ventes »).
 - **Verdict affiché** : « aucun lien démontrable » quand l'intervalle contient 0, « moins cher » ou « plus cher » sinon. C'est une corrélation, jamais une preuve de cause.
+
+## Onglet « Estimer »
+
+Calculé dans le navigateur, sans donnée supplémentaire : ventes de la résidence à ±15 % de la surface saisie, hors ventes atypiques, sur les trois dernières années complètes. La fourchette va du premier au troisième quartile du prix au m², multiplié par la surface et arrondi au millier d'euros. Sous 4 ventes dans le bâtiment choisi, le calcul s'étend à toute la résidence ; sous 4 ventes au total, aucun chiffre n'est donné.

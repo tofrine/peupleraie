@@ -165,14 +165,15 @@ document.querySelectorAll(".refchip").forEach(
 );
 
 // --- onglets
-const TABS = ["compare", "trend", "gal", "fresnes", "sales"];
+const SANS_FILTRES = ["estimer", "energie"]; // onglets indépendants des filtres du haut
+const TABS = ["estimer", "compare", "trend", "gal", "fresnes", "sales"];
 function showTab(t) {
-  if (!TABS.includes(t)) t = "compare";
+  if (!TABS.includes(t)) t = "estimer";
   TABS.forEach((k) => {
     document.getElementById("tab-" + k).hidden = k !== t;
   });
   document.querySelectorAll("#tabs .tab").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === t));
-  document.querySelector(".bench").hidden = document.getElementById("summary").hidden = t === "energie";
+  document.querySelector(".bench").hidden = document.getElementById("summary").hidden = SANS_FILTRES.includes(t);
   try {
     sessionStorage.setItem("peupleraie-tab", t);
   } catch (e) {}
@@ -192,9 +193,9 @@ document.getElementById("tabs").onkeydown = (e) => {
   update();
   document.querySelector(`#tabs [data-tab="${TABS[n]}"]`).focus();
 };
-let startTab = "compare";
+let startTab = "estimer";
 try {
-  startTab = sessionStorage.getItem("peupleraie-tab") || "compare";
+  startTab = sessionStorage.getItem("peupleraie-tab") || "estimer";
 } catch (e) {}
 showTab(startTab);
 
@@ -1107,6 +1108,98 @@ function renderSettingsSum() {
           .map((r) => (r === 5 ? "F5 et +" : "F" + r))
           .join(", ");
   document.getElementById("settingsSum").textContent = `${n} bâtiment${n > 1 ? "s" : ""} · ${yrs} · ${sf} · ${pc}`;
+}
+
+// --- estimer : fourchette de prix à partir des ventes comparables
+const EST = { annees: 3, ecart: 0.15, minVentes: 4 };
+const quantile = (tri, q) => {
+  const i = (tri.length - 1) * q,
+    k = Math.floor(i);
+  return tri[k] + (tri[Math.min(k + 1, tri.length - 1)] - tri[k]) * (i - k);
+};
+const aMille = (n) => Math.round(n / 1000) * 1000;
+
+// ventes comparables : même surface à ±15 %, hors ventes atypiques, sur les dernières années complètes
+function comparables(bat, surface) {
+  const complete = YEARS.filter((y) => DATA.coverage[y] >= 50),
+    annees = complete.slice(-EST.annees);
+  const proches = DATA.sales.filter(
+    (s) => B[s.g].peupleraie && !s.aty && annees.includes(s.y) && Math.abs(s.s - surface) <= surface * EST.ecart,
+  );
+  const duBat = bat ? proches.filter((s) => s.g === bat) : proches;
+  const elargi = duBat.length < EST.minVentes;
+  return { ventes: elargi ? proches : duBat, elargi, annees };
+}
+
+function estimer(bat, surface) {
+  const { ventes, elargi, annees } = comparables(bat, surface);
+  if (ventes.length < EST.minVentes) return { n: ventes.length, ventes, elargi, annees };
+  const tri = ventes.map((s) => s.m2).sort((a, b) => a - b),
+    [q1, med, q3] = [0.25, 0.5, 0.75].map((q) => quantile(tri, q));
+  return {
+    n: ventes.length,
+    ventes,
+    elargi,
+    annees,
+    q1,
+    med,
+    q3,
+    bas: aMille(q1 * surface),
+    haut: aMille(q3 * surface),
+  };
+}
+
+function renderEstimer() {
+  const bat = document.getElementById("estBat").value,
+    surface = Number(document.getElementById("estSurf").value),
+    verdict = document.getElementById("estVerdict"),
+    table = document.getElementById("estTable"),
+    note = document.getElementById("estNote");
+  table.innerHTML = "";
+  verdict.classList.remove("found");
+  if (!(surface >= 9)) {
+    verdict.textContent = "Choisissez un bâtiment et indiquez une surface en m² pour voir la fourchette.";
+    note.textContent = "";
+    return;
+  }
+  const r = estimer(bat, surface),
+    de = r.annees[0],
+    a = r.annees[r.annees.length - 1];
+  if (r.n < EST.minVentes) {
+    verdict.textContent = `Trop peu de ventes comparables (${r.n}) pour donner un repère fiable à cette surface.`;
+    note.textContent = "";
+    return;
+  }
+  verdict.classList.add("found");
+  verdict.innerHTML =
+    `Les appartements d'environ ${fmt(surface)} m² se sont vendus <b>entre ${eur(r.bas)} et ${eur(r.haut)}</b>` +
+    ` (médiane ${eur(aMille(r.med * surface))}, soit ${fmt(r.med)} €/m²).` +
+    (r.elargi ? " Comme ce bâtiment a trop peu de ventes, c'est calculé sur toute la résidence." : "");
+  note.textContent =
+    `Calculé sur ${r.n} ventes de ${de} à ${a}, surface à ±15 %, ventes atypiques écartées. La fourchette va du quart bas au quart haut des prix au m². ` +
+    "C'est un repère, pas une estimation officielle : l'étage, l'état, les travaux et l'exposition ne sont pas pris en compte.";
+  const lignes = [...r.ventes].sort((x, y) => (x.d < y.d ? 1 : -1));
+  table.innerHTML =
+    "<thead><tr><th>Date</th><th>Bâtiment</th><th>Surface</th><th>Prix</th><th>€/m²</th></tr></thead><tbody>" +
+    lignes
+      .map(
+        (s) =>
+          `<tr><td>${dateFr(s.d)}</td><td>${esc(short(s.g))}</td><td>${fmt(s.s)} m²</td><td>${eur(s.v)}</td><td>${fmt(s.m2)}</td></tr>`,
+      )
+      .join("") +
+    "</tbody>";
+  labelCells();
+}
+{
+  const sel = document.getElementById("estBat");
+  sel.innerHTML =
+    '<option value="">Toute la résidence</option>' +
+    DATA.buildings
+      .filter((b) => b.peupleraie)
+      .map((b) => `<option value="${b.id}">${esc(b.label)}</option>`)
+      .join("");
+  sel.onchange = document.getElementById("estSurf").oninput = renderEstimer;
+  renderEstimer();
 }
 
 renderEnergie();
