@@ -64,9 +64,12 @@ const save = () => {
 
 const weak = YEARS.filter((y) => DATA.coverage[y] < 50);
 document.getElementById("coverage").innerHTML =
-  `Données DVF ${YEARS[0]}–${YEARS[YEARS.length - 1]} · ${DATA.sales.length} ventes d'appartements dans les ${DATA.buildings.length} bâtiments de la résidence.` +
+  `Données DVF ${YEARS[0]}–${YEARS[YEARS.length - 1]} · ${DATA.sales.length}` +
+  ` ventes d'appartements dans les ${DATA.buildings.length} bâtiments de la résidence.` +
   (weak.length
-    ? ` <b>${weak.join(", ")} est très incomplète</b> (${weak.map((y) => DATA.coverage[y]).join(", ")} ventes pour tout Fresnes) et décochée par défaut.`
+    ? ` <b>${weak.join(", ")} est très incomplète</b> (` +
+      `${weak.map((y) => DATA.coverage[y]).join(", ")}` +
+      ` ventes pour tout Fresnes) et décochée par défaut.`
     : "");
 document.getElementById("coverage").hidden = false;
 document.getElementById("updated").textContent = DATA.updated || "";
@@ -199,11 +202,17 @@ function renderList() {
   const counts = {};
   filtered().forEach((s) => (counts[s.g] = (counts[s.g] || 0) + 1));
   const chip = (b) =>
-    `<button type="button" class="chip${b.peupleraie ? "" : " alt"}" data-id="${b.id}" aria-pressed="${st.sel.has(b.id)}" title="${esc(b.label)} · entrées ${b.entrees.join(", ")}">${SHORTN[b.id] || esc(b.label)}<span class="n">${counts[b.id] || 0}</span></button>`;
+    `<button type="button" class="chip${b.peupleraie ? "" : " alt"}" data-id="${b.id}` +
+    `" aria-pressed="${st.sel.has(b.id)}" title="${esc(b.label)} · entrées ` +
+    `${b.entrees.join(", ")}">${SHORTN[b.id] || esc(b.label)}<span class="n">` +
+    `${counts[b.id] || 0}</span></button>`;
   const inside = DATA.buildings.filter((b) => b.peupleraie),
     outside = DATA.buildings.filter((b) => !b.peupleraie);
   document.getElementById("bchips").innerHTML = outside.length
-    ? `<div><div class="sublabel">La Peupleraie</div><div class="chips">${inside.map(chip).join("")}</div></div><div><div class="sublabel">En face, pour comparer</div><div class="chips">${outside.map(chip).join("")}</div></div>`
+    ? `<div><div class="sublabel">La Peupleraie</div><div class="chips">` +
+      `${inside.map(chip).join("")}</div></div><div>` +
+      `<div class="sublabel">En face, pour comparer</div><div class="chips">` +
+      `${outside.map(chip).join("")}</div></div>`
     : `<div class="chips">${inside.map(chip).join("")}</div>`;
 }
 document.getElementById("bchips").onclick = (e) => {
@@ -216,7 +225,9 @@ document.getElementById("bchips").onclick = (e) => {
 document.getElementById("mapkey").innerHTML = DATA.buildings
   .map(
     (b) =>
-      `<span><b>${MAPL[b.id] || b.id}</b> ${esc(SHORTN[b.id] || b.label).replace(/^[A-Z] · /, "")}${b.peupleraie ? "" : " (en face)"}</span>`,
+      `<span><b>${MAPL[b.id] || b.id}</b> ` +
+      `${esc(SHORTN[b.id] || b.label).replace(/^[A-Z] · /, "")}` +
+      `${b.peupleraie ? "" : " (en face)"}</span>`,
   )
   .join("");
 document.getElementById("selNone").onclick = () => {
@@ -285,7 +296,10 @@ function renderMap() {
       dashArray: sel ? null : "3 3",
     });
     markers[b.id].bindTooltip(
-      `<b>${esc(b.label)}</b><br>Entrées ${b.entrees.join(", ")}<br>${arr.length} vente${arr.length > 1 ? "s" : ""}${med != null ? " · médiane " + fmt(med) + " €/m²" : ""}<br><span style="color:var(--ink-3)">${sel ? "Clic pour retirer" : "Clic pour ajouter"}</span>`,
+      `<b>${esc(b.label)}</b><br>Entrées ${b.entrees.join(", ")}<br>${arr.length} vente` +
+        `${arr.length > 1 ? "s" : ""}${med != null ? " · médiane " + fmt(med) + " €/m²" : ""}` +
+        `<br><span style="color:var(--ink-3)">` +
+        `${sel ? "Clic pour retirer" : "Clic pour ajouter"}</span>`,
       { direction: "top", offset: [0, -8] },
     );
     if (sel) markers[b.id].bringToFront();
@@ -374,9 +388,13 @@ const hideTip = () => {
   tip.hidden = true;
 };
 const where = (s) =>
-  `${short(s.g)}${s.e ? ", n° " + s.e : ""}${s.niv ? " · " + s.niv + (s.md ? (s.md === "M" ? ", montant" : ", descendant") : "") : ""}`;
+  `${short(s.g)}${s.e ? ", n° " + s.e : ""}` +
+  `${s.niv ? " · " + s.niv + (s.md ? (s.md === "M" ? ", montant" : ", descendant") : "") : ""}`;
 const saleTip = (s) =>
-  `<b>${esc(where(s))}</b><br>${dateFr(s.d)} · ${s.s} m² · ${s.p || "?"} p.${s.typ ? " (" + s.typ + ")" : ""}<br>${eur(s.v)} · <b>${fmt(s.m2)} €/m²</b>${s.dep ? `<br>avec ${s.dep} dépendance${s.dep > 1 ? "s" : ""} (cave, parking…)` : ""}${s.aty ? "<br><i>Vente atypique</i>" : ""}`;
+  `<b>${esc(where(s))}</b><br>${dateFr(s.d)} · ${s.s} m² · ${s.p || "?"} p.` +
+  `${s.typ ? " (" + s.typ + ")" : ""}<br>${eur(s.v)} · <b>${fmt(s.m2)} €/m²</b>` +
+  `${s.dep ? `<br>avec ${s.dep} dépendance${s.dep > 1 ? "s" : ""} (cave, parking…)` : ""}` +
+  `${s.aty ? "<br><i>Vente atypique</i>" : ""}`;
 
 function niceTicks(lo, hi, n = 6) {
   const raw = (hi - lo) / n,
@@ -395,7 +413,10 @@ function renderStrip(G) {
     .map((r) => ({ ...r, v: refVals(r.t) }))
     .filter((r) => r.v.length);
   if (!rows.length) {
-    el.innerHTML = `<p class="empty">${G.note || "Aucune vente ne correspond : sélectionnez des bâtiments sur le plan ou élargissez les filtres."}</p>`;
+    el.innerHTML =
+      `<p class="empty">` +
+      `${G.note || "Aucune vente ne correspond : sélectionnez des bâtiments sur le plan ou élargissez les filtres."}` +
+      `</p>`;
     return;
   }
   const all = rows.flatMap((r) => r.ss.map((s) => s.m2)).concat(refs.map((r) => median(r.v)));
@@ -416,23 +437,39 @@ function renderStrip(G) {
     niceTicks(lo, hi)
       .map(
         (t) =>
-          `<line x1="${x(t)}" x2="${x(t)}" y1="18" y2="${H - 22}" stroke="var(--grid)" stroke-width="1"/><text x="${x(t)}" y="${H - 6}" text-anchor="middle">${fmt(t)}</text>`,
+          `<line x1="${x(t)}" x2="${x(t)}" y1="18" y2="${H - 22}` +
+          `" stroke="var(--grid)" stroke-width="1"/><text x="${x(t)}" y="${H - 6}` +
+          `" text-anchor="middle">${fmt(t)}</text>`,
       )
       .join("") +
     `</g>`;
-  s += `<text x="${W - R0 + 8}" y="12" style="font-family:var(--f-mono);font-size:10px;fill:var(--ink-3)">méd. · nb</text>`;
+  s +=
+    `<text x="${W - R0 + 8}" y="12" ` +
+    `style="font-family:var(--f-mono);font-size:10px;fill:var(--ink-3)">méd. · nb</text>`;
   rows.forEach((r, i) => {
     const y = 34 + i * rh,
       v = r.ss.map((q) => q.m2),
       mn = Math.min(...v),
       mx = Math.max(...v);
-    s += `<text x="${L0 - 12}" y="${y + 4}" text-anchor="end">${esc(r.label.length > 34 ? r.label.slice(0, 33) + "…" : r.label)}</text>`;
-    s += `<line x1="${x(mn)}" x2="${x(mx)}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="2" stroke-linecap="round"/>`;
+    s +=
+      `<text x="${L0 - 12}" y="${y + 4}" text-anchor="end">` +
+      `${esc(r.label.length > 34 ? r.label.slice(0, 33) + "…" : r.label)}</text>`;
+    s +=
+      `<line x1="${x(mn)}" x2="${x(mx)}" y1="${y}" y2="${y}` +
+      `" stroke="var(--line)" stroke-width="2" stroke-linecap="round"/>`;
     r.ss.forEach((q, j) => {
-      s += `<circle class="sd" data-i="${q.i}" cx="${x(q.m2)}" cy="${y + ((j % 3) - 1) * 4}" r="5.5" fill="${q.niv && st.groupBy !== "niv" ? NIVCOL[q.niv] : "var(--accent)"}" fill-opacity="0.8" stroke="var(--panel)" stroke-width="1.5"/>`;
+      s +=
+        `<circle class="sd" data-i="${q.i}" cx="${x(q.m2)}" cy="${y + ((j % 3) - 1) * 4}` +
+        `" r="5.5" fill="${q.niv && st.groupBy !== "niv" ? NIVCOL[q.niv] : "var(--accent)"}` +
+        `" fill-opacity="0.8" stroke="var(--panel)" stroke-width="1.5"/>`;
     });
-    s += `<line x1="${x(r.med)}" x2="${x(r.med)}" y1="${y - 11}" y2="${y + 11}" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>`;
-    s += `<text x="${W - R0 + 8}" y="${y + 4}" style="font-family:var(--f-mono);font-size:11px">${fmt(r.med)} · ${r.ss.length}</text>`;
+    s +=
+      `<line x1="${x(r.med)}" x2="${x(r.med)}" y1="${y - 11}" y2="${y + 11}` +
+      `" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>`;
+    s +=
+      `<text x="${W - R0 + 8}" y="${y + 4}` +
+      `" style="font-family:var(--f-mono);font-size:11px">${fmt(r.med)} · ${r.ss.length}` +
+      `</text>`;
   });
   refs.forEach((r, k) => {
     const y = 34 + (rows.length + k) * rh,
@@ -441,16 +478,29 @@ function renderStrip(G) {
       m = median(r.v);
     const x1 = x(Math.max(lo, q(0.25))),
       x2 = x(Math.min(hi, q(0.75)));
-    s += `<text x="${L0 - 12}" y="${y + 4}" text-anchor="end" style="font-style:italic">${r.name} (mêmes filtres)</text>`;
-    s += `<rect class="refbar" data-tip="${r.name}, mêmes filtres : la moitié des ventes entre ${fmt(q(0.25))} et ${fmt(q(0.75))} €/m²" x="${Math.min(x1, x2)}" y="${y - 5}" width="${Math.max(2, Math.abs(x2 - x1))}" height="10" rx="3" fill="${r.color}" fill-opacity="0.3"/>`;
-    s += `<line x1="${x(m)}" x2="${x(m)}" y1="${y - 11}" y2="${y + 11}" stroke="${r.color}" stroke-width="2.5" stroke-dasharray="3 2"/>`;
-    s += `<text x="${W - R0 + 8}" y="${y + 4}" style="font-family:var(--f-mono);font-size:11px">${fmt(m)} · ${r.v.length}</text>`;
+    s +=
+      `<text x="${L0 - 12}" y="${y + 4}" text-anchor="end" style="font-style:italic">` +
+      `${r.name} (mêmes filtres)</text>`;
+    s +=
+      `<rect class="refbar" data-tip="${r.name}, mêmes filtres : la moitié des ventes entre ` +
+      `${fmt(q(0.25))} et ${fmt(q(0.75))} €/m²" x="${Math.min(x1, x2)}" y="${y - 5}" width="` +
+      `${Math.max(2, Math.abs(x2 - x1))}" height="10" rx="3" fill="${r.color}` +
+      `" fill-opacity="0.3"/>`;
+    s +=
+      `<line x1="${x(m)}" x2="${x(m)}" y1="${y - 11}" y2="${y + 11}" stroke="${r.color}` +
+      `" stroke-width="2.5" stroke-dasharray="3 2"/>`;
+    s +=
+      `<text x="${W - R0 + 8}" y="${y + 4}` +
+      `" style="font-family:var(--f-mono);font-size:11px">${fmt(m)} · ${r.v.length}</text>`;
   });
   el.innerHTML =
     s +
     `</svg>` +
     (G.list.some((r) => r.ss.some((q) => q.niv)) && st.groupBy !== "niv"
-      ? `<div class="legend">${NIVS.map((n) => `<span><i style="background:${NIVCOL[n]};height:10px;width:10px;border-radius:50%"></i>${n} (bât. A et C)</span>`).join("")}<span><i style="background:var(--accent);height:10px;width:10px;border-radius:50%"></i>autres bâtiments</span></div>`
+      ? `<div class="legend">` +
+        `${NIVS.map((n) => `<span><i style="background:${NIVCOL[n]};height:10px;width:10px;border-radius:50%"></i>${n} (bât. A et C)</span>`).join("")}` +
+        `<span><i style="background:var(--accent);height:10px;width:10px;border-radius:50%">` +
+        `</i>autres bâtiments</span></div>`
       : "");
   el.querySelectorAll(".sd").forEach((c) => {
     c.onmousemove = (e) => showTip(e, saleTip(DATA.sales[+c.dataset.i]));
@@ -504,7 +554,10 @@ function renderTable(G) {
           : k === "prix"
             ? eur(r.prix)
             : fmt(r[k]);
-  let h = `<thead><tr>${COLS.map(([k, l]) => `<th data-k="${k}" ${k === key ? `aria-sort="${dir > 0 ? "ascending" : "descending"}"` : ""}>${l}</th>`).join("")}</tr></thead><tbody>`;
+  let h =
+    `<thead><tr>` +
+    `${COLS.map(([k, l]) => `<th data-k="${k}" ${k === key ? `aria-sort="${dir > 0 ? "ascending" : "descending"}"` : ""}>${l}</th>`).join("")}` +
+    `</tr></thead><tbody>`;
   h += rows
     .map((r) => `<tr class="${r.n < 3 ? "few" : ""}">${COLS.map(([k]) => `<td>${cell(r, k)}</td>`).join("")}</tr>`)
     .join("");
@@ -551,9 +604,11 @@ const lum = (hex) => {
 function renderBatA() {
   const el = document.getElementById("bata"),
     ss = DATA.sales.filter((s) => st.plan.includes(s.g) && s.niv && baseFilter(s));
-  let h = `<div class="bata"><span></span><span class="h">Escalier A · portes 2 à 10</span><span class="h">Escalier B · portes 10 à 18</span>`;
+  let h =
+    `<div class="bata"><span></span><span class="h">Escalier A · portes 2 à 10</span>` +
+    `<span class="h">Escalier B · portes 10 à 18</span>`;
   NIVS.forEach((n) => {
-    h += `<span class="lv"><i style="background:${NIVCOL[n]}"></i>${n === "RdC" ? "Rez-de-chaussée" : n}</span>`;
+    h += `<span class="lv"><i style="background:${NIVCOL[n]}"></i>` + `${n === "RdC" ? "Rez-de-chaussée" : n}</span>`;
     ["A", "B"].forEach((e) => {
       const v = ss.filter((s) => s.niv === n && s.esc === e),
         med = median(v.map((s) => s.m2)),
@@ -614,9 +669,11 @@ function lineChart(el, legendEl, ys, series, labelAll, noLabels) {
   const x = (y) =>
       ys.length === 1 ? (L0 + W - R0) / 2 : L0 + 20 + ((y - ys[0]) / (ys[ys.length - 1] - ys[0])) * (W - L0 - R0 - 40),
     yy = (v) => T0 + (1 - (v - lo) / (hi - lo)) * (H - T0 - B0);
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution du prix médian au m²"><g class="axis">`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution du prix médian au m²">` + `<g class="axis">`;
   niceTicks(lo, hi, 5).forEach((t) => {
-    s += `<line x1="${L0}" x2="${W - R0}" y1="${yy(t)}" y2="${yy(t)}" stroke="var(--grid)"/><text x="${L0 - 8}" y="${yy(t) + 4}" text-anchor="end">${fmt(t)}</text>`;
+    s +=
+      `<line x1="${L0}" x2="${W - R0}" y1="${yy(t)}" y2="${yy(t)}" stroke="var(--grid)"/>` +
+      `<text x="${L0 - 8}" y="${yy(t) + 4}" text-anchor="end">${fmt(t)}</text>`;
   });
   ys.forEach((y) => {
     s += `<text x="${x(y)}" y="${H - 10}" text-anchor="middle">${y}</text>`;
@@ -625,13 +682,23 @@ function lineChart(el, legendEl, ys, series, labelAll, noLabels) {
   series.forEach((se, si) => {
     const pts = se.pts.filter((p) => p.med != null);
     if (pts.length > 1)
-      s += `<polyline fill="none" stroke="${se.color}" stroke-width="2" stroke-linejoin="round" ${se.dash ? 'stroke-dasharray="6 4"' : ""} points="${pts.map((p) => `${x(p.y)},${yy(p.med)}`).join(" ")}"/>`;
+      s +=
+        `<polyline fill="none" stroke="${se.color}" stroke-width="2" stroke-linejoin="round" ` +
+        `${se.dash ? 'stroke-dasharray="6 4"' : ""} points="` +
+        `${pts.map((p) => `${x(p.y)},${yy(p.med)}`).join(" ")}"/>`;
     pts.forEach((p) => {
-      s += `<circle cx="${x(p.y)}" cy="${yy(p.med)}" r="5" fill="${p.n < 3 ? "var(--panel)" : se.color}" stroke="${se.color}" stroke-width="2"/><circle class="hit" data-s="${si}" data-y="${p.y}" cx="${x(p.y)}" cy="${yy(p.med)}" r="14" fill="transparent"/>`;
+      s +=
+        `<circle cx="${x(p.y)}" cy="${yy(p.med)}" r="5" fill="` +
+        `${p.n < 3 ? "var(--panel)" : se.color}" stroke="${se.color}" stroke-width="2"/>` +
+        `<circle class="hit" data-s="${si}" data-y="${p.y}" cx="${x(p.y)}" cy="${yy(p.med)}` +
+        `" r="14" fill="transparent"/>`;
     });
     if ((si === 0 && !noLabels) || labelAll)
       pts.forEach((p) => {
-        s += `<text x="${x(p.y)}" y="${yy(p.med) + (labelAll && si === 1 ? 21 : -12)}" text-anchor="middle" style="font-family:var(--f-mono);font-size:11px;fill:var(--ink)">${fmt(p.med)}</text>`;
+        s +=
+          `<text x="${x(p.y)}" y="${yy(p.med) + (labelAll && si === 1 ? 21 : -12)}" ` +
+          `text-anchor="middle" ` +
+          `style="font-family:var(--f-mono);font-size:11px;fill:var(--ink)">${fmt(p.med)}</text>`;
       });
   });
   el.innerHTML = s + `</svg>`;
@@ -692,11 +759,15 @@ function renderTrend(G) {
       : "";
   document.getElementById("trendTable").innerHTML = !series.some((s) => s.pts.some((p) => p.med != null))
     ? ""
-    : `<thead><tr><th>Année</th>${series.map((s) => `<th>${s.name} €/m²</th><th>ventes</th>`).join("")}</tr></thead><tbody>` +
+    : `<thead><tr><th>Année</th>` +
+      `${series.map((s) => `<th>${s.name} €/m²</th><th>ventes</th>`).join("")}</tr></thead>` +
+      `<tbody>` +
       ys
         .map(
           (y, k) =>
-            `<tr><td>${y}</td>${series.map((s) => `<td>${s.pts[k].med != null ? fmt(s.pts[k].med) : "–"}</td><td>${s.pts[k].n}</td>`).join("")}</tr>`,
+            `<tr><td>${y}</td>` +
+            `${series.map((s) => `<td>${s.pts[k].med != null ? fmt(s.pts[k].med) : "–"}</td><td>${s.pts[k].n}</td>`).join("")}` +
+            `</tr>`,
         )
         .join("") +
       `</tbody>`;
@@ -731,11 +802,15 @@ function renderFresnes() {
   lineChart(document.getElementById("fresnes"), document.getElementById("fresnesLegend"), ys, series, true);
   const t = document.getElementById("fresnesTable");
   t.innerHTML =
-    `<thead><tr><th>Année</th>${series.map((s) => `<th>${s.name.replace("Fresnes, ", "")} €/m²</th><th>ventes</th>`).join("")}</tr></thead><tbody>` +
+    `<thead><tr><th>Année</th>` +
+    `${series.map((s) => `<th>${s.name.replace("Fresnes, ", "")} €/m²</th><th>ventes</th>`).join("")}` +
+    `</tr></thead><tbody>` +
     ys
       .map(
         (y, i) =>
-          `<tr><td>${y}</td>${series.map((s) => `<td>${fmt(s.pts[i].med)}</td><td>${s.pts[i].n}</td>`).join("")}</tr>`,
+          `<tr><td>${y}</td>` +
+          `${series.map((s) => `<td>${fmt(s.pts[i].med)}</td><td>${s.pts[i].n}</td>`).join("")}` +
+          `</tr>`,
       )
       .join("") +
     `</tbody>`;
@@ -763,24 +838,33 @@ function renderEnergie() {
   );
   D.trop_peu.forEach((c) =>
     rows.push(
-      `<div class="erow"><span class="elab">${name(c)}</span><span class="hint">moins de 5 DPE : non affiché</span><span></span></div>`,
+      `<div class="erow"><span class="elab">${name(c)}</span>` +
+        `<span class="hint">moins de 5 DPE : non affiché</span><span></span></div>`,
     ),
   );
   document.getElementById("energieBars").innerHTML = rows.join("");
   document.getElementById("energieNote").innerHTML =
-    "Un seul DPE par logement (le plus récent), établis depuis juillet 2021 : cela ne couvre pas tous les logements. " +
-    "Calendrier de la loi Climat et résilience : les logements classés G ne peuvent plus être loués depuis 2025, les F à partir de 2028, les E à partir de 2034.";
+    "Un seul DPE par logement (le plus récent), établis depuis juillet 2021 : cela ne " +
+    "couvre pas tous les logements. " +
+    ("Calendrier de la loi Climat et résilience : les logements classés G ne peuvent plus " +
+      "être loués depuis 2025, les F à partir de 2028, les E à partir de 2034.");
   const cols = Object.keys(D.prix).filter((c) => c === "TOUS" || Object.values(D.prix[c]).some((s) => s.med != null)),
     cell = (s) =>
       !s || !s.n ? "–" : s.med ? `${fmt(s.med)} <small>n=${s.n}</small>` : `<span class="dim">n=${s.n}</span>`;
   const ref = D.prix.TOUS["D"] && D.prix.TOUS["D"].med;
   document.getElementById("energiePrix").innerHTML =
-    `<thead><tr><th>Étiquette</th>${cols.map((c, i) => `<th>${name(c)} €/m²</th>${i === 0 ? "<th>Écart à D</th>" : ""}`).join("")}</tr></thead><tbody>` +
+    `<thead><tr><th>Étiquette</th>` +
+    `${cols.map((c, i) => `<th>${name(c)} €/m²</th>${i === 0 ? "<th>Écart à D</th>" : ""}`).join("")}` +
+    `</tr></thead><tbody>` +
     Object.keys(D.prix.TOUS)
       .map((g) => {
         const s = D.prix.TOUS[g],
           ec = ref && s.med && g !== "D" ? Math.round((s.med / ref - 1) * 100) : null;
-        return `<tr><td>${g}</td>${cols.map((c, i) => `<td>${cell(D.prix[c][g])}</td>${i === 0 ? `<td>${ec == null ? "–" : (ec > 0 ? "+" : "") + ec + " %"}</td>` : ""}`).join("")}</tr>`;
+        return (
+          `<tr><td>${g}</td>` +
+          `${cols.map((c, i) => `<td>${cell(D.prix[c][g])}</td>${i === 0 ? `<td>${ec == null ? "–" : (ec > 0 ? "+" : "") + ec + " %"}</td>` : ""}`).join("")}` +
+          `</tr>`
+        );
       })
       .join("") +
     `</tbody>`;
@@ -789,10 +873,27 @@ function renderEnergie() {
     V = document.getElementById("energieVerdict");
   const reserve = " L'intervalle est large parce que les ventes rapprochées d'un DPE sont peu nombreuses.";
   const msg = {
-    trop_peu: `<b>Trop peu de ventes pour conclure.</b> Seules ${L.n} ventes sont rapprochées d'un DPE avec un prix de comparaison fiable ; il en faudrait au moins 20, réparties sur au moins deux classes d'étiquette.`,
-    aucun: `<b>On ne peut pas conclure à un lien entre l'étiquette et le prix.</b> Sur ${L.n} ventes, l'écart estimé est de ${pc(L.effet)} par classe d'étiquette, avec un intervalle de confiance à 95 % de ${pc(L.ic && L.ic[0])} à ${pc(L.ic && L.ic[1])} : il contient 0, donc les données sont compatibles avec <b>aucun effet</b>.${reserve}`,
-    negatif: `<b>Les logements moins bien classés se vendent moins cher :</b> environ ${pc(L.effet)} par classe d'étiquette (de A–C vers F–G), intervalle de confiance à 95 % de ${pc(L.ic && L.ic[0])} à ${pc(L.ic && L.ic[1])}, sur ${L.n} ventes.${reserve}`,
-    positif: `<b>Résultat inattendu :</b> les logements moins bien classés se vendent plutôt plus cher (${pc(L.effet)} par classe, intervalle à 95 % de ${pc(L.ic && L.ic[0])} à ${pc(L.ic && L.ic[1])}, ${L.n} ventes). Cela vient très probablement d'autres différences (étage, état, rénovation) et non de l'étiquette.${reserve}`,
+    trop_peu:
+      `<b>Trop peu de ventes pour conclure.</b> Seules ${L.n} ventes sont rapprochées d'un ` +
+      `DPE avec un prix de comparaison fiable ; il en faudrait au moins 20, réparties sur ` +
+      `au moins deux classes d'étiquette.`,
+    aucun:
+      `<b>On ne peut pas conclure à un lien entre l'étiquette et le prix.</b> Sur ${L.n}` +
+      ` ventes, l'écart estimé est de ${pc(L.effet)}` +
+      ` par classe d'étiquette, avec un intervalle de confiance à 95 % de ` +
+      `${pc(L.ic && L.ic[0])} à ${pc(L.ic && L.ic[1])}` +
+      ` : il contient 0, donc les données sont compatibles avec <b>aucun effet</b>.` +
+      `${reserve}`,
+    negatif:
+      `<b>Les logements moins bien classés se vendent moins cher :</b> environ ` +
+      `${pc(L.effet)}` +
+      ` par classe d'étiquette (de A–C vers F–G), intervalle de confiance à 95 % de ` +
+      `${pc(L.ic && L.ic[0])} à ${pc(L.ic && L.ic[1])}, sur ${L.n} ventes.${reserve}`,
+    positif:
+      `<b>Résultat inattendu :</b> les logements moins bien classés se vendent plutôt plus ` +
+      `cher (${pc(L.effet)} par classe, intervalle à 95 % de ${pc(L.ic && L.ic[0])} à ` +
+      `${pc(L.ic && L.ic[1])}, ${L.n} ventes). Cela vient très probablement d'autres ` +
+      `différences (étage, état, rénovation) et non de l'étiquette.${reserve}`,
   }[L.verdict];
   V.innerHTML = msg;
   V.classList.toggle("found", L.verdict === "negatif" || L.verdict === "positif");
@@ -801,17 +902,25 @@ function renderEnergie() {
     Object.entries(D.ecart)
       .map(
         ([g, s]) =>
-          `<tr><td>${g}</td><td>${s.med != null ? `${pc(s.med)} <small>(${pc(s.q1)} à ${pc(s.q3)})</small>` : "–"}</td><td>${s.n}</td></tr>`,
+          `<tr><td>${g}</td><td>` +
+          `${s.med != null ? `${pc(s.med)} <small>(${pc(s.q1)} à ${pc(s.q3)})</small>` : "–"}` +
+          `</td><td>${s.n}</td></tr>`,
       )
       .join("") +
     `</tbody>`;
   const m = D.rapprochement;
   document.getElementById("energieMatch").innerHTML =
-    `${m.apparie} ventes sur ${m.ventes} ont pu être rapprochées d'un DPE sans ambiguïté, dont ${m.par_lot} grâce à un numéro de lot commun (le critère le plus sûr). Pour les autres : même bâtiment et même entrée, DPE établi dans les deux ans avant la vente, surface proche. ${m.ambigu} ventes étaient ambiguës et ${m.aucun} sans DPE correspondant. ` +
+    `${m.apparie} ventes sur ${m.ventes}` +
+    ` ont pu être rapprochées d'un DPE sans ambiguïté, dont ${m.par_lot} grâce à un ` +
+    `numéro de lot commun (le critère le plus sûr). Pour les autres : même bâtiment et ` +
+    `même entrée, DPE établi dans les deux ans avant la vente, surface proche. ${m.ambigu}` +
+    ` ventes étaient ambiguës et ${m.aucun} sans DPE correspondant. ` +
     (cols.length === 1
-      ? "Aucun bâtiment n'a assez de ventes par classe pour être détaillé : seul le total du domaine est affiché. "
+      ? "Aucun bâtiment n'a assez de ventes par classe pour être détaillé : seul le total du " + "domaine est affiché. "
       : "") +
-    "Un prix plus bas pour une mauvaise étiquette peut aussi venir de l'étage, de l'état du logement ou de l'année de la vente : ces écarts ne sont pas corrigés. Aucun chiffre n'est affiché pour moins de 5 logements ou ventes.";
+    ("Un prix plus bas pour une mauvaise étiquette peut aussi venir de l'étage, de l'état " +
+      "du logement ou de l'année de la vente : ces écarts ne sont pas corrigés. Aucun " +
+      "chiffre n'est affiché pour moins de 5 logements ou ventes.");
 }
 
 // --- ventes une à une
@@ -835,13 +944,21 @@ function renderSales() {
   lastSales = ss;
   const shown = ss.filter((s) => !(st.noAty && s.aty)).length;
   document.getElementById("salesCount").textContent =
-    `${shown} vente${shown > 1 ? "s" : ""}, les plus récentes en premier${st.noAty && ss.length > shown ? " ; barrées : atypiques, écartées des calculs" : ""}`;
+    `${shown} vente${shown > 1 ? "s" : ""}, les plus récentes en premier` +
+    `${st.noAty && ss.length > shown ? " ; barrées : atypiques, écartées des calculs" : ""}`;
   document.getElementById("sales").innerHTML = ss.length
-    ? `<thead><tr><th>Bâtiment</th><th>Entrée</th><th>Galerie</th><th>Date</th><th>Surface</th><th>Pièces</th><th>Prix</th><th>€/m²</th><th>Dép.</th></tr></thead><tbody>` +
+    ? `<thead><tr><th>Bâtiment</th><th>Entrée</th><th>Galerie</th><th>Date</th>` +
+      `<th>Surface</th><th>Pièces</th><th>Prix</th><th>€/m²</th><th>Dép.</th></tr></thead>` +
+      `<tbody>` +
       (showAllSales ? ss : ss.slice(0, 30))
         .map(
           (s) =>
-            `<tr class="${s.aty ? "aty" : ""}"><td>${esc(short(s.g))}</td><td>${s.e || "–"}</td><td>${s.niv ? `<span class="tag">${s.niv.replace("Galerie ", "")}${s.md ? " · " + (s.md === "M" ? "mont." : "desc.") : ""}</span>` : ""}</td><td>${dateFr(s.d)}</td><td>${s.s} m²</td><td>${s.p || "?"}${s.typ ? " (" + s.typ + ")" : ""}</td><td>${eur(s.v)}</td><td>${fmt(s.m2)}</td><td>${s.dep || ""}</td></tr>`,
+            `<tr class="${s.aty ? "aty" : ""}"><td>${esc(short(s.g))}</td><td>${s.e || "–"}</td>` +
+            `<td>` +
+            `${s.niv ? `<span class="tag">${s.niv.replace("Galerie ", "")}${s.md ? " · " + (s.md === "M" ? "mont." : "desc.") : ""}</span>` : ""}` +
+            `</td><td>${dateFr(s.d)}</td><td>${s.s} m²</td><td>${s.p || "?"}` +
+            `${s.typ ? " (" + s.typ + ")" : ""}</td><td>${eur(s.v)}</td><td>${fmt(s.m2)}</td><td>` +
+            `${s.dep || ""}</td></tr>`,
         )
         .join("") +
       "</tbody>"
@@ -904,7 +1021,8 @@ document.getElementById("csvDl").onclick = () => {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
     csvMsg(
-      `${lastSales.length} ventes exportées. Si aucun fichier n'apparaît, utilisez « Copier » puis collez dans un tableur.`,
+      `${lastSales.length} ventes exportées. Si aucun fichier n'apparaît, utilisez « Copier ` +
+        `» puis collez dans un tableur.`,
     );
   } catch (e) {
     csvMsg("Le téléchargement est bloqué ici : utilisez « Copier » puis collez dans un tableur.");
